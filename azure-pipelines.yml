@@ -1,0 +1,57 @@
+trigger:
+  branches: { include: [ main ] }
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+  CI: true
+
+stages:
+- stage: Build_and_Test
+  jobs:
+  - job: api
+    displayName: API build + integration tests
+    steps:
+    - task: UseDotNet@2
+      inputs: { packageType: sdk, version: 8.0.x }
+    - script: dotnet restore
+      displayName: restore
+    - script: dotnet build --no-restore -c Release -warnaserror
+      displayName: build
+    - script: dotnet test --no-build -c Release --logger trx --results-directory $(Agent.TempDirectory)/trx
+      displayName: integration tests (SQLite in-memory, fake Graph)
+    - task: PublishTestResults@2
+      condition: always()
+      inputs: { testResultsFormat: VSTest, testResultsFiles: '$(Agent.TempDirectory)/trx/*.trx', testRunTitle: API }
+
+  - job: web
+    displayName: Web type-check + build
+    steps:
+    - task: NodeTool@0
+      inputs: { versionSpec: 20.x }
+    - script: npm ci && npm run build
+      workingDirectory: src/MatterDesk.Web
+      displayName: tsc + vite build
+
+  - job: e2e
+    displayName: Playwright end-to-end (Chrome)
+    dependsOn: [ api, web ]
+    steps:
+    - task: UseDotNet@2
+      inputs: { packageType: sdk, version: 8.0.x }
+    - task: NodeTool@0
+      inputs: { versionSpec: 20.x }
+    - script: npm ci
+      workingDirectory: src/MatterDesk.Web
+    - script: npm ci && npx playwright install --with-deps chrome
+      workingDirectory: tests/e2e
+      displayName: install Playwright + Chrome
+    - script: npx playwright test
+      workingDirectory: tests/e2e
+      displayName: e2e
+    - task: PublishPipelineArtifact@1
+      condition: always()
+      inputs: { targetPath: tests/e2e/playwright-report, artifact: playwright-report }

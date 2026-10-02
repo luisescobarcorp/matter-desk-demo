@@ -1,0 +1,13 @@
+bin/
+obj/
+*.db
+*.db-shm
+*.db-wal
+node_modules/
+dist/
+test-results/
+playwright-report/
+.vs/
+.idea/
+*.user
+.DS_Store

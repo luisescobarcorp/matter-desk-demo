@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{52F7C2D8-C786-4372-A929-661559C5C245}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterDesk.Api", "src\MatterDesk.Api\MatterDesk.Api.csproj", "{AEAE7126-BBC3-48B4-A61A-C8FE02B4F7F9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{259B9586-EE63-4B1F-8CCC-089A421902EB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterDesk.Api.Tests", "tests\MatterDesk.Api.Tests\MatterDesk.Api.Tests.csproj", "{D2E51C30-9F99-4F3D-9283-2716B10DDE39}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AEAE7126-BBC3-48B4-A61A-C8FE02B4F7F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AEAE7126-BBC3-48B4-A61A-C8FE02B4F7F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AEAE7126-BBC3-48B4-A61A-C8FE02B4F7F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AEAE7126-BBC3-48B4-A61A-C8FE02B4F7F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2E51C30-9F99-4F3D-9283-2716B10DDE39}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2E51C30-9F99-4F3D-9283-2716B10DDE39}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2E51C30-9F99-4F3D-9283-2716B10DDE39}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2E51C30-9F99-4F3D-9283-2716B10DDE39}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{AEAE7126-BBC3-48B4-A61A-C8FE02B4F7F9} = {52F7C2D8-C786-4372-A929-661559C5C245}
+		{D2E51C30-9F99-4F3D-9283-2716B10DDE39} = {259B9586-EE63-4B1F-8CCC-089A421902EB}
+	EndGlobalSection
+EndGlobal
