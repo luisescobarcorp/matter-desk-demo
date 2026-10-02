@@ -8,7 +8,8 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 var cfg = builder.Configuration;
 var env = builder.Environment;
-var allowDevHeaderAuth = env.IsDevelopment() || env.IsEnvironment("Testing");
+// Demo hosting (public URL with seeded data, no real client data) opts in to the header scheme via Auth:AllowDevHeader.
+var allowDevHeaderAuth = env.IsDevelopment() || env.IsEnvironment("Testing") || cfg.GetValue<bool>("Auth:AllowDevHeader");
 
 // ---------- Data ------------------------------------------------------------------------------------
 // SQL Server in any real environment; SQLite when no connection string is configured (local demo, CI, tests).
@@ -58,6 +59,10 @@ else
     builder.Services.AddSingleton<IMailSource, NoMailboxConfigured>();   // keeps the API runnable without a tenant
 builder.Services.AddScoped<EmailProfilingService>();
 
+// ---------- Search and MCP ---------------------------------------------------------------------------
+builder.Services.AddScoped<MatterDesk.Api.Search.SearchService>();
+builder.Services.AddScoped<MatterDesk.Api.Mcp.MatterTools>();   // tools exposed to AI clients at POST /mcp, same operator, same predicate
+
 // ---------- Web ------------------------------------------------------------------------------------
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();                       // RFC 7807 shape for every error, including unhandled ones
@@ -106,17 +111,21 @@ var app = builder.Build();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
-if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
+if (allowDevHeaderAuth)
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+app.UseDefaultFiles();
+app.UseStaticFiles();   // serves the built React app from wwwroot when present (single-container hosting)
 app.UseCors();
 app.UseAuthentication();
 app.UseMiddleware<CurrentOperatorMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 app.MapGet("/healthz", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNow })).AllowAnonymous();
+if (Directory.Exists(Path.Combine(app.Environment.WebRootPath ?? "wwwroot")))
+    app.MapFallbackToFile("index.html").AllowAnonymous();   // client-side routes resolve to the SPA, /api/* still 404s normally
 
 // Schema + seed. In production this would be `dotnet ef database update` in the release pipeline, not at startup.
 if (!app.Environment.IsEnvironment("Testing"))

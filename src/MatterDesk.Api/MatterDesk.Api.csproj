@@ -7,6 +7,10 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591</NoWarn>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <!-- `dotnet publish /t:PublishContainer` builds an OCI image without a Docker daemon -->
+    <ContainerRepository>matterdesk</ContainerRepository>
+    <ContainerBaseImage>mcr.microsoft.com/dotnet/aspnet:8.0</ContainerBaseImage>
+    <ContainerPort>8080</ContainerPort>
   </PropertyGroup>
 
   <ItemGroup>

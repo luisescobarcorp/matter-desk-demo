@@ -1,14 +1,27 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Document, Email, Matter, Operator, Paged, SearchHit } from './api'
 import { operators } from './api'
 import { useApi } from './useApi'
+import About from './About'
 
 const fmt = (iso: string) => new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+
+type View = 'matters' | 'about'
+const viewFromHash = (): View => (window.location.hash === '#about' ? 'about' : 'matters')
 
 export default function App() {
   const [operator, setOperator] = useState<Operator>('LES')
   const [selected, setSelected] = useState<number | null>(null)
   const [query, setQuery] = useState('')
+  const [view, setView] = useState<View>(() => viewFromHash())
+
+  useEffect(() => {
+    const onHash = () => setView(viewFromHash())
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
+
+  const go = (v: View) => { setView(v); window.location.hash = v === 'about' ? 'about' : '' }
 
   return (
     <div className="shell">
@@ -20,7 +33,11 @@ export default function App() {
             <div className="brand-sub">matters · documents · profiled email</div>
           </div>
         </div>
-        <SearchBox value={query} onChange={setQuery} />
+        <nav className="nav" aria-label="Views">
+          <button data-testid="nav-matters" aria-current={view === 'matters'} onClick={() => go('matters')}>Matters</button>
+          <button data-testid="nav-about" aria-current={view === 'about'} onClick={() => go('about')}>About this project</button>
+        </nav>
+        <SearchBox value={query} onChange={(v) => { setQuery(v); if (view !== 'matters') go('matters') }} />
         <label className="operator">
           Operator
           <select data-testid="operator" value={operator} onChange={(e) => { setOperator(e.target.value as Operator); setSelected(null) }}>
@@ -29,19 +46,25 @@ export default function App() {
         </label>
       </header>
 
-      <main className="layout">
-        <section className="pane">
-          <h2>Matters</h2>
-          <MatterList operator={operator} selected={selected} onSelect={(id) => { setQuery(''); setSelected(id) }} />
-        </section>
-        <section className="pane wide">
-          {query.trim().length >= 2
-            ? <SearchResults operator={operator} query={query.trim()} onOpen={(id) => { setQuery(''); setSelected(id) }} />
-            : selected
-              ? <MatterDetail key={`${operator}-${selected}`} operator={operator} id={selected} />
-              : <p className="hint">Select a matter, or search across matters, documents and email.</p>}
-        </section>
-      </main>
+      {view === 'about' ? (
+        <main className="layout single">
+          <section className="pane"><About /></section>
+        </main>
+      ) : (
+        <main className="layout">
+          <section className="pane">
+            <h2>Matters</h2>
+            <MatterList operator={operator} selected={selected} onSelect={(id) => { setQuery(''); setSelected(id) }} />
+          </section>
+          <section className="pane wide">
+            {query.trim().length >= 2
+              ? <SearchResults operator={operator} query={query.trim()} onOpen={(id) => { setQuery(''); setSelected(id) }} />
+              : selected
+                ? <MatterDetail key={`${operator}-${selected}`} operator={operator} id={selected} />
+                : <p className="hint">Select a matter, or search across matters, documents and email. Switch operator to see how permissions change what is visible.</p>}
+          </section>
+        </main>
+      )}
     </div>
   )
 }

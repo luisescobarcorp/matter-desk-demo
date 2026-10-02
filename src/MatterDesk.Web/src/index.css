@@ -34,3 +34,16 @@ button { font: inherit; }
 .grid { width: 100%; border-collapse: collapse; font-size: 13px; }
 .grid th { text-align: left; font-size: 11px; text-transform: uppercase; color: var(--grey); padding: 6px 8px; border-bottom: 1px solid var(--line); }
 .grid td { padding: 8px; border-bottom: 1px solid #eef1f5; vertical-align: top; }
+.nav { display: flex; gap: 4px; }
+.nav button { background: none; border: 1px solid transparent; color: #c9d3e3; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.nav button:hover { color: #fff; border-color: #3b4a6b; }
+.nav button[aria-current="true"] { color: #fff; background: #2a3b5f; border-color: var(--teal); }
+.layout.single { grid-template-columns: 1fr; }
+.layout.single .pane { max-width: 1100px; margin: 0 auto; width: 100%; }
+.about h1 { font-size: 22px; color: var(--navy); margin: 0 0 10px; }
+.about h2 { font-size: 15px; color: var(--teal); margin: 22px 0 8px; }
+.about p { line-height: 1.55; font-size: 14px; }
+.about ul { padding-left: 20px; line-height: 1.55; font-size: 14px; }
+.about-try { background: #eef7f7; border: 1px solid #cfe6e6; padding: 10px 12px; border-radius: 6px; }
+.about-grid td { font-size: 13px; line-height: 1.45; }
+.about-key { font-weight: 600; color: var(--navy); white-space: nowrap; }
