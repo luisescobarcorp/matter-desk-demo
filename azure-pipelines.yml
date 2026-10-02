@@ -26,6 +26,13 @@ stages:
     - task: PublishTestResults@2
       condition: always()
       inputs: { testResultsFormat: VSTest, testResultsFiles: '$(Agent.TempDirectory)/trx/*.trx', testRunTitle: API }
+    - script: |
+        for rid in win-x64 linux-x64 osx-arm64; do
+          dotnet publish src/MatterDesk.Cli -c Release -r $rid -o $(Build.ArtifactStagingDirectory)/cli/$rid
+        done
+      displayName: publish CLI (single-file, self-contained)
+    - task: PublishPipelineArtifact@1
+      inputs: { targetPath: $(Build.ArtifactStagingDirectory)/cli, artifact: matterdesk-cli }
 
   - job: web
     displayName: Web type-check + build

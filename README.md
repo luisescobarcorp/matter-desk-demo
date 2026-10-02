@@ -43,8 +43,8 @@ transfers to a Graph sync layer, MCP, and my database experience stated exactly 
 | Microsoft Graph / Exchange–Outlook | `Mail/GraphMailSource.cs`, `Mail/EmailProfilingService.cs` |
 | OAuth / OIDC | `Auth/`, `Program.cs` |
 | Azure DevOps / CI | `azure-pipelines.yml` |
-| Automated testing incl. Playwright | `tests/` (23 API + 6 e2e) |
-| AI-assisted development with human-owned review | "How this was built" below; MCP server at `/mcp` |
+| Automated testing incl. Playwright | `tests/` (24 API + 6 e2e) |
+| AI-assisted development with human-owned review | "How this was built" below; MCP server at `/mcp`; `matterdesk mcp` stdio bridge |
 
 The full line-by-line map, including what is marked *ramping* or *not yet*, is in [docs/BACKGROUND.md](docs/BACKGROUND.md#5-the-posting-requirement-by-requirement).
 
@@ -84,13 +84,46 @@ curl -s -X POST http://localhost:5080/mcp -H "Content-Type: application/json" -H
 ```
 
 To point an MCP client at it, configure an HTTP server with URL `http://localhost:5080/mcp` and the
-`X-Operator-Code` header (or a Bearer token in production).
+`X-Operator-Code` header (or a Bearer token in production). Remote connectors that cannot send custom
+headers (Claude.ai, ChatGPT) can use `http://localhost:5080/mcp/JDU` instead: the route segment is read by
+the same dev-header scheme, so it only exists where that scheme is enabled, a header still wins when both
+are present, and an unknown code is still 403.
+
+## Local client
+
+`src/MatterDesk.Cli` is a small executable that talks to the API over HTTP — the same shape as a desktop
+component talking to a web tier: it authenticates, treats 401/403/404/409/428 as decisions rather than
+faults, retries only transient failures (429/503/504 and socket errors, with backoff and `Retry-After`),
+and never assumes the server is the build it was compiled against.
+
+```bash
+dotnet run --project src/MatterDesk.Cli -- demo                      # against the hosted demo, as LES
+dotnet run --project src/MatterDesk.Cli -- demo --api http://localhost:5080 --operator JDU
+
+matterdesk matters | search Falcon | documents 10099-0001 | tools | call search_matters query=Falcon
+```
+
+`demo` walks the whole surface and prints what each status code proves: 401 with no identity, 403 for an
+unknown operator, the restricted matter visible to JDU only, 403 vs 404 on restricted matter vs document,
+zero search hits for the ungranted operator, problem+json on validation, 201 → 428 → 200 → 409 → 403 on a
+profile edit, and the MCP tools returning exactly what REST returns for the same operator.
+
+`matterdesk mcp` turns the executable into a **stdio MCP server** that bridges to the hosted `/mcp`
+endpoint as the configured operator — the transport Claude Desktop, Cursor and VS Code speak. Nothing is
+interpreted locally, so the server's authorization is the only authorization:
+
+```json
+{ "mcpServers": { "matterdesk": { "command": "matterdesk", "args": ["mcp", "--operator", "JDU"] } } }
+```
+
+`dotnet publish src/MatterDesk.Cli -c Release -r win-x64` (or `linux-x64`, `osx-arm64`) produces a single
+self-contained file with no .NET install required.
 
 ## Hosted demo
 
 A hosted copy runs with the seeded demo data (no real client data) and the operator header enabled
 through `Auth:AllowDevHeader=true`. Switch the operator in the top-right to see the permission boundary
-move; open **About this project** for the background. Live at **https://szhzkeau4r.us-east-1.awsapprunner.com** (Swagger at `/swagger`, MCP at `/mcp`).
+move; open **About this project** for the background. Live at **https://szhzkeau4r.us-east-1.awsapprunner.com** (Swagger at `/swagger`, MCP at `/mcp`, or `/mcp/LES`, `/mcp/JDU`, `/mcp/PAR` for connectors that cannot send a header).
 
 How it is hosted: one container (the API serves the React build from `wwwroot`, with a SPA fallback
 that leaves `/api`, `/mcp` and `/swagger` alone), built by `dotnet publish /t:PublishContainer` with
@@ -102,7 +135,7 @@ including Azure App Service or Azure Container Apps.
 ## Tests
 
 ```bash
-# API integration tests: real pipeline, SQLite in-memory, fake Graph source — 23 tests
+# API integration tests: real pipeline, SQLite in-memory, fake Graph source — 24 tests
 dotnet test
 
 # End-to-end: boots the API and Vite, drives the React screen in Chrome — 6 tests
@@ -114,7 +147,7 @@ What the suites prove:
 - **Permissions** — unauthenticated → 401; unknown operator → 403; the restricted matter is absent from lists; `GET` is 200 for the granted operator and 403 for the other; its documents are 404 for the other; search returns zero hits for `Falcon` and never shows a restricted document even when a keyword (`Acme`) matches; a viewer without `CanEdit` cannot profile.
 - **Profiles** — 201 with `Location`, version 1 and one version row; validation errors are `application/problem+json`; `PUT` without `If-Match` → 428; stale version → 409; reload and retry → 200; `ETag` matches the version.
 - **Mail sync** — delta paging across pages; second sync scans zero and resumes from the stored delta link; a message tagged with a restricted matter is **not** filed by an ungranted operator but is by a granted one; marker failure keeps the profile and reports `MarkerSet = false`; per-matter sync files only into that matter and honours edit rights.
-- **MCP** — unauthenticated → 401; `initialize` / `tools/list` describe three tools; `search_matters` for `Falcon` returns zero hits as LES and hits as JDU; `get_matter` / `list_documents` on the restricted matter return an error for LES that does not reveal the title, and data for JDU; an unsupported method is a JSON-RPC `-32601`, not a crash.
+- **MCP** — unauthenticated → 401; `initialize` / `tools/list` describe three tools; `search_matters` for `Falcon` returns zero hits as LES and hits as JDU; `get_matter` / `list_documents` on the restricted matter return an error for LES that does not reveal the title, and data for JDU; an unsupported method is a JSON-RPC `-32601`, not a crash; `/mcp/{operatorCode}` enforces the same boundary as the header, 403 for an unknown code, header wins when both are present.
 - **End-to-end** — the React screen shows the right matters per operator, loads documents and email, shows no results for restricted content, confirms the API returns 403 and a zero-hit search for the ungranted operator, opens the About page from the nav and from `#about`, and exercises the MCP endpoint over HTTP.
 
 ## Connect Microsoft Graph (optional)
@@ -141,6 +174,7 @@ src/MatterDesk.Api
   Mcp/             MatterTools — tool descriptors and handlers, operator-scoped
   Search/          SearchService — the UNION ALL search shared by REST and MCP
 src/MatterDesk.Web react screen: matter list, documents/email tabs, search, operator switcher, About page
+src/MatterDesk.Cli  local executable: REST walkthrough (`demo`), ad-hoc calls, and a stdio MCP bridge to the hosted endpoint
 tests/MatterDesk.Api.Tests  xUnit + WebApplicationFactory + SQLite in-memory + FakeMailSource
 tests/e2e                   Playwright (Chrome) with webServer bootstrapping both apps
 docs/                       BACKGROUND.md (platform model, integration experience, MCP, data), screenshots

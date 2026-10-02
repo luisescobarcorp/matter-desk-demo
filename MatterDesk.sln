@@ -11,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{259B9586
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterDesk.Api.Tests", "tests\MatterDesk.Api.Tests\MatterDesk.Api.Tests.csproj", "{D2E51C30-9F99-4F3D-9283-2716B10DDE39}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterDesk.Cli", "src\MatterDesk.Cli\MatterDesk.Cli.csproj", "{0076AF87-3690-443D-90F6-5638F1F01D21}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -28,9 +30,14 @@ Global
 		{D2E51C30-9F99-4F3D-9283-2716B10DDE39}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D2E51C30-9F99-4F3D-9283-2716B10DDE39}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D2E51C30-9F99-4F3D-9283-2716B10DDE39}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0076AF87-3690-443D-90F6-5638F1F01D21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0076AF87-3690-443D-90F6-5638F1F01D21}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0076AF87-3690-443D-90F6-5638F1F01D21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0076AF87-3690-443D-90F6-5638F1F01D21}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{AEAE7126-BBC3-48B4-A61A-C8FE02B4F7F9} = {52F7C2D8-C786-4372-A929-661559C5C245}
 		{D2E51C30-9F99-4F3D-9283-2716B10DDE39} = {259B9586-EE63-4B1F-8CCC-089A421902EB}
+		{0076AF87-3690-443D-90F6-5638F1F01D21} = {52F7C2D8-C786-4372-A929-661559C5C245}
 	EndGlobalSection
 EndGlobal
