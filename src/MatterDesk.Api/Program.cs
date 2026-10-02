@@ -125,7 +125,8 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapGet("/healthz", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNow })).AllowAnonymous();
 if (Directory.Exists(Path.Combine(app.Environment.WebRootPath ?? "wwwroot")))
-    app.MapFallbackToFile("index.html").AllowAnonymous();   // client-side routes resolve to the SPA, /api/* still 404s normally
+    // Client-side routes resolve to the SPA; API, MCP and Swagger paths keep their normal 404s.
+    app.MapFallbackToFile("{*path:regex(^(?!api|mcp|swagger|assets).*$)}", "index.html").AllowAnonymous();
 
 // Schema + seed. In production this would be `dotnet ef database update` in the release pipeline, not at startup.
 if (!app.Environment.IsEnvironment("Testing"))

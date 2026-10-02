@@ -11,3 +11,5 @@ playwright-report/
 .idea/
 *.user
 .DS_Store
+src/MatterDesk.Api/wwwroot/*
+!src/MatterDesk.Api/wwwroot/.gitkeep

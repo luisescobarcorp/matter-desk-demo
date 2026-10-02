@@ -76,6 +76,13 @@ A hosted copy runs with the seeded demo data (no real client data) and the opera
 through `Auth:AllowDevHeader=true`. Switch the operator in the top-right to see the permission boundary
 move; open **About this project** for the background. The URL is in the accompanying email.
 
+How it is hosted: one container (the API serves the React build from `wwwroot`, with a SPA fallback
+that leaves `/api`, `/mcp` and `/swagger` alone), built by `dotnet publish /t:PublishContainer` with
+no Docker daemon, pushed to Amazon ECR and run on AWS App Runner behind its managed HTTPS endpoint.
+`deploy/aws-apprunner.sh` does the whole thing idempotently (ECR repo, image, pull role, service
+create-or-update, health check on `/healthz`). The same image runs anywhere a container runs,
+including Azure App Service or Azure Container Apps.
+
 ## Tests
 
 ```bash
