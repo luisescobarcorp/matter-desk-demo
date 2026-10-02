@@ -74,7 +74,7 @@ To point an MCP client at it, configure an HTTP server with URL `http://localhos
 
 A hosted copy runs with the seeded demo data (no real client data) and the operator header enabled
 through `Auth:AllowDevHeader=true`. Switch the operator in the top-right to see the permission boundary
-move; open **About this project** for the background. The URL is in the accompanying email.
+move; open **About this project** for the background. Live at **https://szhzkeau4r.us-east-1.awsapprunner.com** (Swagger at `/swagger`, MCP at `/mcp`).
 
 How it is hosted: one container (the API serves the React build from `wwwroot`, with a SPA fallback
 that leaves `/api`, `/mcp` and `/swagger` alone), built by `dotnet publish /t:PublishContainer` with
