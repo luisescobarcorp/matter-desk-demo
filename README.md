@@ -12,6 +12,7 @@ Prepared by Luis Escobar for PerfectLaw, October 2026. The background behind it 
 Microsoft platform (Azure / Microsoft 365 / Entra / Graph / EWS), the integration and automation work that
 transfers to a Graph sync layer, MCP, and my database experience stated exactly — is in
 **[docs/BACKGROUND.md](docs/BACKGROUND.md)** and on the app's **About this project** page.
+It also covers BTCEdge, a personal real-time trading system (TypeScript, 442K lines, MCP server, ~6,900 tests) that is the strongest evidence for the concurrency, auth, testing and AI-assisted-development parts of the posting.
 
 ![Matter documents](docs/screenshot_matter_documents.png)
 

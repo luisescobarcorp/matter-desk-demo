@@ -15,18 +15,29 @@ const estate = [
   ['OpenDental + n8n', 'Practice-management database read by SQL and written through its API; 60+ workflows under HIPAA constraints.', 'A vendor schema other systems query directly — the same shape as PerfectLaw’s single SQL Server database.'],
 ]
 
+const btcedge = [
+  ['REST conventions: routing, status codes, validation, errors, authorization', '254 routes under /api on Node + Express; bearer gate with constant-time compare; an SSE hub that replaced ~40 polling hooks; WebSocket clients to Kalshi, Coinbase and five further exchange tapes.', 'The posting’s conventions at a scale where inconsistency surfaces within hours; pinned server/client wire contracts.'],
+  ['Concurrency, data integrity, transactional consistency', 'Idempotent client_order_id derived from bet identity so a retry cannot double-buy; in-flight guard against overlapping placements; guardrails (per-order and daily limits, price, open-order cap, balance floor, loss breaker) in one server-side function shared by preview and place; write-then-rename atomic store writes after a torn write destroyed ~15 days of history; corrupt stores quarantined, never reset; authority-granting stores fail closed.', 'Idempotency, overlap guards and “check and action share one code path” are what a document profile, an Outlook marker and a billing batch need.'],
+  ['Large datasets; storage and performance', 'Trade ledger began as an 80 MB JSON file rewritten every 1–5 seconds (~68 GB/hour of disk writes, 75% of a core); migrated to row-level SQLite writes, with S3 versioned backups.', 'Measure the storage cost before redesigning; row-level writes over whole-document rewrites, as any large table rewards.'],
+  ['Authentication and authorization; OAuth / OIDC', 'Bearer gate on the API; on the MCP server an optional OAuth 2.1 authorization server with PKCE and dynamic client registration; role leases (observer / risk-officer / trader / admin) — a tool a role may not use is not even advertised; append-only audit of every mutating call; lockout-proof failed-auth throttle.', 'The OAuth server side, not only the client; authorization enforced by the server, never the model; audit as a first-class record.'],
+  ['Automated testing that actually tests the behaviour', 'Vitest suites across hundreds of files (~2,600 server tests at one point, ~6,900 later); fixtures from real settled windows; mutation passes that break one clause and re-run the suite; integration tests on a real port reading SSE frames; wire-contract pins; source scans proving a module never imports an order-placement path.', 'Mutation passes check that a test tests the behaviour instead of assuming it — the posting’s concern about AI-generated tests.'],
+  ['CI/CD, Git, operations', 'GitHub Actions gate (full server suite, both tsc configs, client build) before any push; systemd services on AWS Graviton reached only via SSM; timer-driven autodeploy; a parity script hashing every tracked file against the pushed commit; an off-box Lambda watchdog with least-privilege IAM; a CI check that fails when a reference doc drifts from its module.', 'Azure DevOps asks the same questions: what gates a push, how do you prove what runs is what was reviewed, who watches the watcher.'],
+  ['MCP: governed access for AI agents', 'A dedicated mcp/ package: stdio and Streamable HTTP transports, role leases, write audit, resources with subscriptions, docs as resources, advisory sampling, slim views that name omitted keys, size-honest truncation, a report registry. Read-only in v1; later writes use the same endpoints and guardrails as the UI — no second brain.', 'Governed, permission-aware agent access to a system of record is where the DMS market is heading; I have shipped the role model and OAuth server end to end.'],
+  ['AI-assisted development with human-owned review', 'Built spec-first with Claude Code and Cursor: twelve agent worktrees, a written contract at the top of 847 of 1,345 source files. Models in the product arrive display-and-grade-first: a nightly Claude review proposes but never applies changes; TimesFM forecasts are graded until their record earns influence; in-loop agents are zero-authority behind a fail-closed control file; a push-to-phone approval is the only way a model-proposed order is placed.', '“AI-generated code is not automatically trusted” is already the house rule: specs in, small diffs out, tests before trust, a human owning anything that touches data or money.'],
+]
+
 const coverage = [
   ['REST conventions: routing, methods, status codes, validation, errors, authorization, filtering, sorting', 'Controllers; 200/201/400/401/403/404/409/428; problem+json everywhere; filters and paging; Swagger', 'Demonstrated'],
-  ['SQL Server: indexes, execution plans, concurrency, transactions, large DMS data', 'Explicit indexes; concurrency token → rowversion; one SaveChanges per unit of work; server-side UNION ALL. SSMS plans and T-SQL idioms: ramping from MySQL', 'Demonstrated / ramping'],
+  ['SQL Server: indexes, execution plans, concurrency, transactions, large DMS data', 'Explicit indexes; concurrency token → rowversion; one SaveChanges per unit of work; server-side UNION ALL. SSMS plans and T-SQL idioms: ramping from MySQL; BTCEdge: idempotent ids, atomic writes, quarantine, 80 MB JSON ledger migrated to SQLite row writes', 'Demonstrated / ramping'],
   ['Stored procedures when appropriate', 'Keep procedures where a rule is shared with desktop AIM; EF Core for new surfaces', 'Background'],
   ['React across the API boundary', 'This screen: list, detail tabs, search, operator switcher; typed client; loading / error / 403 states', 'Demonstrated'],
   ['Profiles, metadata, search, folders, permissions, versions, relationships, full-text', 'Document profiles with versions; matter-hub relationships; predicate in every query; cross-type search. Folders not modelled', 'Demonstrated (folders: not yet)'],
   ['Microsoft 365 / Graph / Exchange–Outlook', 'GraphMailSource: Entra auth, Inbox delta queries, Outlook category marker, idempotent filing', 'Demonstrated'],
   ['Authentication and authorization; OAuth / OIDC', 'JWT Bearer against any OIDC issuer; policy scheme; claim → operator mapping. In production: MSAL sign-in with Entra ID token validation, role gates, scoped service tokens', 'Demonstrated'],
   ['Azure DevOps / CI-CD / Git', 'azure-pipelines.yml; Git history; the same container runs on Azure App Service or Container Apps', 'Demonstrated'],
-  ['Automated testing incl. Playwright', '23 xUnit tests through the real pipeline; 6 Playwright tests in Chrome. React component tests not yet added', 'Demonstrated (component tests: not yet)'],
-  ['AI-assisted development with human-owned review', 'Spec first, small diffs, every change read and run; two agent-introduced bugs caught by tests; MCP server at /mcp', 'Demonstrated'],
-  ['Existing production codebase, not only greenfield', 'A 113-plugin WordPress monorepo and a 27-repository estate maintained in production; backup-first deploys, hot-patch recovery, audit → single authorization primitive', 'Demonstrated (different stack)'],
+  ['Automated testing incl. Playwright', '23 xUnit tests through the real pipeline; 6 Playwright tests in Chrome. React component tests not yet added; BTCEdge: thousands of Vitest tests, mutation passes, CI gate', 'Demonstrated (component tests: not yet)'],
+  ['AI-assisted development with human-owned review', 'Spec first, small diffs, every change read and run; two agent-introduced bugs caught by tests; MCP server at /mcp; BTCEdge built spec-first in Claude Code / Cursor (12 agent worktrees, written contracts at the top of 847 files)', 'Demonstrated'],
+  ['Existing production codebase, not only greenfield', 'A 113-plugin WordPress monorepo and a 27-repository estate maintained in production; backup-first deploys, hot-patch recovery, audit → single authorization primitive; a 442K-line TypeScript system operated in production with autodeploy and parity checks', 'Demonstrated (different stack)'],
   ['5+ years, strong C# / ASP.NET Core', 'Working C# / ASP.NET Core 8 in this repository; 20 years across the rest of the stack; the project exists so the C# can be read rather than asserted', 'Demonstrated'],
 ]
 
@@ -81,6 +92,22 @@ export default function About() {
         the ones relevant to this role; facts are from the repositories themselves as of 2 October 2026.
       </p>
       <Grid head={['System', 'What it is', 'Why it is relevant here']} rows={estate} />
+
+      <h2>A personal project: BTCEdge (2026)</h2>
+      <p>
+        BTCEdge is a personal project I have built and run since mid-2026: one Node/TypeScript process trading Kalshi 15-minute
+        bitcoin up/down contracts on my own account, plus a React dashboard. It is a hobby and a learning exercise, not a
+        business, and I make no claim about its results. It is the project where the posting’s hardest asks — concurrency, data
+        integrity, authentication and authorization, automated testing, MCP, and AI-assisted development with human-owned review —
+        had real money behind them, so the engineering had to be right rather than merely tidy. The repository is private (about
+        442,000 lines of TypeScript across server, client, shared types and an MCP package) and can be walked through on screen.
+      </p>
+      <Grid head={['What the posting asks for', 'What BTCEdge does', 'Why it transfers']} rows={btcedge} />
+      <p>
+        Two rules it taught that carry straight into a legal DMS: a number that was not measured is never shown as zero (it
+        renders as a dash, and stale data is drawn dimmer with its age), and no component — model, agent or module — gets
+        authority over data or money until its own graded record has earned it.
+      </p>
 
       <h2>Integration and automation experience, and what transfers</h2>
       <p>
