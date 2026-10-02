@@ -16,6 +16,9 @@ using System.Text.Json.Nodes;
 // assume the server is the one it was built against.
 
 var (command, positional, options) = Args.Parse(args);
+if (options.ContainsKey("help") || command is "help")
+    return command is "mcp" ? McpUsage() : Usage(0);
+
 var api = (options.GetValueOrDefault("api") ?? Environment.GetEnvironmentVariable("MATTERDESK_API") ?? "https://szhzkeau4r.us-east-1.awsapprunner.com").TrimEnd('/');
 var op = (options.GetValueOrDefault("operator") ?? Environment.GetEnvironmentVariable("MATTERDESK_OPERATOR") ?? "LES").ToUpperInvariant();
 var client = new MatterDeskClient(api, op);
@@ -44,7 +47,7 @@ catch (HttpRequestException ex)
     return 2;
 }
 
-static int Usage()
+static int Usage(int exitCode = 1)
 {
     Console.WriteLine("""
         matterdesk — local client for the MatterDesk API
@@ -58,8 +61,30 @@ static int Usage()
           mcp                          run as a stdio MCP server bridging to the hosted endpoint
 
         options: --operator LES|JDU|PAR   --api https://host   (or MATTERDESK_OPERATOR / MATTERDESK_API)
+                 --help | -h             show this help (or `matterdesk mcp --help` for the bridge)
         """);
-    return 1;
+    return exitCode;
+}
+
+static int McpUsage()
+{
+    Console.WriteLine("""
+        matterdesk mcp — stdio MCP server that bridges to the hosted MatterDesk /mcp endpoint
+
+        Reads newline-delimited JSON-RPC from stdin (what Claude Desktop, Cursor and VS Code speak), forwards
+        each message over HTTPS to <api>/mcp as the given operator, and writes the response to stdout.
+        Nothing is interpreted locally: the hosted server's authorization is the only authorization.
+
+        usage: matterdesk mcp [--operator LES|JDU|PAR] [--api https://host]
+
+          --operator CODE   operator the bridge acts as (default LES, or MATTERDESK_OPERATOR)
+          --api URL         API base URL (default https://szhzkeau4r.us-east-1.awsapprunner.com, or MATTERDESK_API)
+          --help, -h        show this help
+
+        example (claude_desktop_config.json / ~/.cursor/mcp.json):
+          { "mcpServers": { "matterdesk": { "command": "matterdesk", "args": ["mcp", "--operator", "JDU"] } } }
+        """);
+    return 0;
 }
 
 static async Task<int> Print(Task<HttpResponseMessage> task)
@@ -329,7 +354,8 @@ static class Args
         var positional = new List<string>(); var options = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         for (var i = 0; i < args.Length; i++)
         {
-            if (args[i].StartsWith("--"))
+            if (args[i] is "--help" or "-h" or "-?" or "/?") options["help"] = "true";   // never consumes a value
+            else if (args[i].StartsWith("--"))
             {
                 var key = args[i][2..];
                 var eq = key.IndexOf('=');
