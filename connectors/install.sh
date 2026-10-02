@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Download the matterdesk CLI for this machine, unzip it, and print the MCP client snippet.
-#   MATTERDESK_RELEASE_URL   base URL holding matterdesk-cli-<rid>.zip (default: GitHub Releases "latest")
+#   MATTERDESK_RELEASE_URL   base URL holding matterdesk-cli-<rid>.zip (default: GitHub release v0.1.0 assets)
 #   MATTERDESK_INSTALL_DIR   where to unzip (default: ~/.matterdesk)
 #   MATTERDESK_OPERATOR      operator code for the snippet (default: LES)
 set -euo pipefail
 
-base="${MATTERDESK_RELEASE_URL:-https://github.com/<your-user>/matterdesk/releases/latest/download/}"
+base="${MATTERDESK_RELEASE_URL:-https://github.com/luisescobarcorp/matter-desk-demo/releases/download/v0.1.0/}"
 dir="${MATTERDESK_INSTALL_DIR:-$HOME/.matterdesk}"
 op="${MATTERDESK_OPERATOR:-LES}"
 

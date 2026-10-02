@@ -12,3 +12,5 @@ the same question then returns zero hits. `/mcp/PAR` is the third seeded operato
 
 Claude Desktop (the app) can use the same URL as a remote connector, or the local stdio bridge in
 [`claude-desktop.json`](claude-desktop.json).
+
+Source and the other connector files: https://github.com/luisescobarcorp/matter-desk-demo/tree/main/connectors

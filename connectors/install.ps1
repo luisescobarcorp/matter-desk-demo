@@ -1,10 +1,10 @@
 # Download the matterdesk CLI for Windows, unzip it, and print the MCP client snippet.
-#   MATTERDESK_RELEASE_URL   base URL holding matterdesk-cli-win-x64.zip (default: GitHub Releases "latest")
+#   MATTERDESK_RELEASE_URL   base URL holding matterdesk-cli-win-x64.zip (default: GitHub release v0.1.0 assets)
 #   MATTERDESK_INSTALL_DIR   where to unzip (default: %LOCALAPPDATA%\MatterDesk)
 #   MATTERDESK_OPERATOR      operator code for the snippet (default: LES)
 $ErrorActionPreference = 'Stop'
 
-$base = if ($env:MATTERDESK_RELEASE_URL) { $env:MATTERDESK_RELEASE_URL } else { 'https://github.com/<your-user>/matterdesk/releases/latest/download/' }
+$base = if ($env:MATTERDESK_RELEASE_URL) { $env:MATTERDESK_RELEASE_URL } else { 'https://github.com/luisescobarcorp/matter-desk-demo/releases/download/v0.1.0/' }
 $dir  = if ($env:MATTERDESK_INSTALL_DIR) { $env:MATTERDESK_INSTALL_DIR } else { Join-Path $env:LOCALAPPDATA 'MatterDesk' }
 $op   = if ($env:MATTERDESK_OPERATOR)    { $env:MATTERDESK_OPERATOR }    else { 'LES' }
 

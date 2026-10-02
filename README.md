@@ -8,7 +8,9 @@ Stack: ASP.NET Core 8 (controllers) · EF Core 8 (SQL Server / SQLite) · Micros
 OIDC bearer auth · MCP server (tools for AI clients) · React 19 + Vite + TypeScript · xUnit integration tests ·
 Playwright end-to-end · Azure Pipelines.
 
-Prepared by Luis Escobar for PerfectLaw, October 2026. The background behind it — how I think about the
+Prepared by Luis Escobar for PerfectLaw, October 2026. Source:
+**[github.com/luisescobarcorp/matter-desk-demo](https://github.com/luisescobarcorp/matter-desk-demo)**;
+hosted demo: **https://szhzkeau4r.us-east-1.awsapprunner.com**. The background behind it — how I think about the
 Microsoft platform (Azure / Microsoft 365 / Entra / Graph / EWS), the integration and automation work that
 transfers to a Graph sync layer, MCP, and my database experience stated exactly — is in
 **[docs/BACKGROUND.md](docs/BACKGROUND.md)** and on the app's **About this project** page.
@@ -121,9 +123,19 @@ interpreted locally, so the server's authorization is the only authorization:
 self-contained file with no .NET install required.
 
 **Local client (EXE).** Prebuilt zips — `matterdesk-cli-win-x64.zip` (`matterdesk.exe`),
-`matterdesk-cli-linux-x64.zip`, `matterdesk-cli-osx-arm64.zip` — are attached to the GitHub Release; each
-holds one self-contained executable, nothing to install. `connectors/install.sh` / `install.ps1` download
-the right one and print the Claude Desktop / Cursor snippet with the absolute path filled in. Ready-made
+`matterdesk-cli-linux-x64.zip`, `matterdesk-cli-osx-arm64.zip` — are attached to GitHub release
+**[v0.1.0](https://github.com/luisescobarcorp/matter-desk-demo/releases/tag/v0.1.0)**; each holds one
+self-contained executable, nothing to install. `connectors/install.sh` / `install.ps1` download the right
+one from that release and print the Claude Desktop / Cursor snippet with the absolute path filled in:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/luisescobarcorp/matter-desk-demo/main/connectors/install.sh | bash
+```
+
+```powershell
+irm https://raw.githubusercontent.com/luisescobarcorp/matter-desk-demo/main/connectors/install.ps1 | iex
+```
+ Ready-made
 connector files for Claude Desktop, Claude.ai, ChatGPT, Cursor and VS Code, and the three ways to connect
 (header, header-less `/mcp/{operator}` URL, local stdio bridge), are in
 **[connectors/README.md](connectors/README.md)**. A captured run of `matterdesk demo` against the hosted

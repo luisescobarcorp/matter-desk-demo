@@ -11,3 +11,5 @@
 
 Use `/mcp/LES` to connect as the operator who is **not** granted the restricted matter; the same question
 then returns zero hits. `/mcp/PAR` is the third seeded operator. An unknown code is 403.
+
+Source and the other connector files: https://github.com/luisescobarcorp/matter-desk-demo/tree/main/connectors

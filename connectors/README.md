@@ -24,8 +24,18 @@ present, the header wins. Steps: [`claude-ai-remote.md`](claude-ai-remote.md),
 executable (`matterdesk mcp --operator LES`) is a stdio MCP server that forwards every request to the
 hosted `/mcp` as that operator; nothing is interpreted locally. Files:
 [`claude-desktop.json`](claude-desktop.json), the stdio entry in [`cursor-mcp.json`](cursor-mcp.json).
-Get the executable with [`install.sh`](install.sh) / [`install.ps1`](install.ps1), or
-`dotnet publish src/MatterDesk.Cli -c Release -r <rid>`.
+Get the executable with [`install.sh`](install.sh) / [`install.ps1`](install.ps1) (they download the
+zip for your platform from release
+[v0.1.0](https://github.com/luisescobarcorp/matter-desk-demo/releases/tag/v0.1.0)), download a zip from
+that release yourself, or build it with `dotnet publish src/MatterDesk.Cli -c Release -r <rid>`.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/luisescobarcorp/matter-desk-demo/main/connectors/install.sh | bash
+```
+
+```powershell
+irm https://raw.githubusercontent.com/luisescobarcorp/matter-desk-demo/main/connectors/install.ps1 | iex
+```
 
 ## Verify first
 
