@@ -13,3 +13,5 @@ playwright-report/
 .DS_Store
 src/MatterDesk.Api/wwwroot/*
 !src/MatterDesk.Api/wwwroot/.gitkeep
+dist-cli/
+*.zip

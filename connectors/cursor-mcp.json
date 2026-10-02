@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "matterdesk-remote": {
+      "url": "https://szhzkeau4r.us-east-1.awsapprunner.com/mcp",
+      "headers": { "X-Operator-Code": "LES" }
+    },
+    "matterdesk-local": {
+      "command": "matterdesk",
+      "args": ["mcp", "--operator", "LES"]
+    }
+  }
+}

@@ -1,0 +1,28 @@
+MatterDesk local client → https://szhzkeau4r.us-east-1.awsapprunner.com  (operator LES)
+Each step is a real HTTP call to the API. The point is not the data; it is what each status code proves.
+
+  200 GET /healthz (anonymous)                                   liveness endpoint is reachable without credentials
+  401 GET /api/matters with no operator                          no identity → 401, not an empty list
+  403 GET /api/matters as NOPE                                   authenticated but not a known operator → 403
+  200 GET /api/matters as LES                                    2 matters: 10077-0001, 10042-0003
+  200 GET /api/matters as JDU                                    3 matters: 10099-0001, 10077-0001, 10042-0003
+  200 GET /api/matters as PAR                                    2 matters: 10077-0001, 10042-0003
+      The restricted matter 10099-0001 appears for JDU only. The predicate runs in SQL (EXISTS against MatterAccess); the row never left the database for LES or PAR.
+
+  403 GET /api/matters/3 as LES                                  exists but not granted → 403 (matter numbers are on every bill; an explicit denial is acceptable)
+  200 GET /api/matters/3/documents as JDU                        2 documents
+  404 GET /api/documents/6 as LES                                a document id must not reveal that a restricted file exists → 404, not 403
+  200 GET /api/search?q=Falcon as LES                            total 0 — the restricted title never reaches the client
+  200 GET /api/search?q=Falcon as JDU                            total 3 — same query, same SQL, different operator
+  400 GET /api/search?q=a                                        application/problem+json — every error, including validation, is RFC 7807
+  201 POST /api/matters/1/documents as LES                       201 with Location http://szhzkeau4r.us-east-1.awsapprunner.com/api/documents/7 and ETag "1"
+  428 PUT /api/documents/7/profile without If-Match              428 Precondition Required — the client must say which version it edited
+  200 PUT /api/documents/7/profile If-Match: "1"                 200, new ETag "2"
+  409 PUT /api/documents/7/profile If-Match: "1" again           409 Conflict — a second writer with the old version cannot silently overwrite the first
+  403 PUT /api/documents/7/profile as PAR                        PAR can view Acme but has no edit grant → 403
+  200 POST /mcp tools/list as LES                                tools: search_matters, get_matter, list_documents
+  200 POST /mcp tools/call search_matters(Falcon) as LES         total 0 — an AI agent is exactly as blind as the operator it acts for
+  200 POST /mcp tools/call search_matters(Falcon) as JDU         total 3 — an AI agent is exactly as blind as the operator it acts for
+
+Done.
+Open https://szhzkeau4r.us-east-1.awsapprunner.com/#about for the background, https://szhzkeau4r.us-east-1.awsapprunner.com/swagger for the API, or run `matterdesk mcp` to use this executable as an MCP connector.

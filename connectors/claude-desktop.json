@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "matterdesk": {
+      "command": "matterdesk",
+      "args": ["mcp", "--operator", "LES"]
+    }
+  }
+}

@@ -12,7 +12,7 @@ matters for the Office 365 integration work.
 | Layer | What it is | Where it shows up in PerfectLaw's work |
 |---|---|---|
 | **Microsoft 365** | The tenant's productivity workloads: **Exchange Online** (mail, calendar, contacts, tasks), SharePoint / OneDrive (files), Teams. | Where a firm's email actually lives. PLSync, the Exchange Profiler and Inbox / Sent profiling all read and write this data. |
-| **Entra ID** (formerly Azure AD) | The identity plane. App registrations, OAuth 2.0 / OpenID Connect, **delegated** vs **application** permissions, admin consent, conditional access. | Issues every token a Graph call carries. A sync service running without a user present needs application permissions and an Exchange application access policy scoped to the right mailboxes. |
+| **Entra ID** (formerly Azure AD) | The identity plane. App registrations, OAuth 2.0 / OpenID Connect, **delegated** vs **application** permissions, admin consent, conditional access. | Issues every token a Graph call carries. A sync service running without a user present needs application permissions and an Exchange application access policy scoped to the right mailboxes. *Prior use:* ENNU's HQ Dashboard signs staff in with their Microsoft 365 accounts (MSAL) and its API validates the Entra ID token on every request, with an email allow-list, admin/member roles and scoped service tokens for machine access; Microsoft Teams receives alerts from every repository. |
 | **Microsoft Graph** | One REST API (`graph.microsoft.com`) over Microsoft 365 data. Delta queries, change notifications (webhooks), `$batch`, throttling with `Retry-After`. | The replacement for EWS. Mail, calendar and contact sync, Outlook markers, drafting and sending from the matter. |
 | **Azure** | The cloud infrastructure: VMs, App Service, Azure SQL, Key Vault, Storage, Monitor. | Where AIM365 is hosted. A hosting decision that is independent of Microsoft 365 and Graph — an on-prem firm still has its mail in Exchange Online. |
 | **EWS** | Exchange Web Services, the SOAP-era API to Exchange. Being disabled in phases from 1 October 2026 and removed from Exchange Online on 1 April 2027. | What the existing integration surfaces were built against, and why the Graph work has a deadline. |
@@ -22,6 +22,21 @@ decides who may touch them, and Graph is the API through which it all happens.**
 model directly: `GraphMailSource` authenticates through Entra (device code or client credentials), reads
 the Inbox through Graph delta queries, and writes the "Filed:" category back through Graph; the API itself
 can be hosted anywhere.
+
+## 1a. The production estate behind these statements (ENNU, 2025–2026)
+
+Twenty-seven repositories across two GitHub organizations run ENNU's digital side; the seven below are the live
+core and the ones relevant to this role. Facts are from the repositories themselves as of 2 October 2026.
+
+| System | What it is | Why it is relevant here |
+|---|---|---|
+| **HQ Dashboard** (hq.ennulife.com) | React 19 / TypeScript front end on Cloudflare Pages; a Cloudflare Worker API joining OpenDental, MindBody, HubSpot, Meta Marketing API, Google Ads, GA4, Search Console, Google Business Profile, Stripe, Authorize.net, WooCommerce, Paubox and Microsoft Teams into one picture; cron sweeps every minute / 5 min / hourly / daily; 76 n8n workflow mirrors; Vitest suites over billing, attribution, email and lead scoping; CI that deploys on push and then verifies the live page serves the new bundle hash. | Microsoft sign-in (MSAL) with Entra ID token validation in the API; a production **MCP server exposing 37 read-only tools** behind OAuth or scoped service tokens, used by Claude and other agents; the "honest data" rule — a value that was not measured renders as a dash, never as zero. |
+| **ennueco** (WordPress monorepo) | ~45,000 PHP files, 113 custom plugins behind ennulife.com, ennu.co and ennupeptides.com: assessments, biomarker scoring, LabCorp PDF parsing, member onboarding, e-signature, HubSpot integration (42+ field mappings), memberships, affiliates, booking, payments; 13 GitHub Actions workflows (lint, phpcs, PHPUnit, quality gates). | **Working inside a large existing production codebase.** The deploy workflow backs up the live plugin before writing, verifies the version after, and purges cache; the must-use plugin sync compares before overwriting so a host-side hot patch is never lost. That workflow exists because production once ran code that existed nowhere in git — the same lesson a shared, decades-old schema teaches. |
+| **start.ennulife.com** (lead funnel) | React 19 / Vite SPA: nine quizzes, eleven persona landing pages, drip sequences; HubSpot forms, Firestore, Paubox, GTM server-side tagging, GA4 cross-domain; 46 unit tests. | React across the API boundary at production volume; a GitHub Actions cron that pings n8n because the platform's own scheduler did not register — knowing where automation silently stops. |
+| **checkin** (checkin.ennulife.com) | Passwordless weekly weight check-in for weight-loss members; logic in n8n; writes to the patient's OpenDental chart, mirrors to HubSpot, Paubox email with delivery receipts, Teams alerts; staff admin behind Microsoft sign-in. | Safety design for a one-click link: AES-256-GCM tokens, one check-in per day, outlier confirmation, never echo the prior value, no PHI in the repository. |
+| **portal** / **onboarding** | Next-generation patient portal and a seven-step onboarding app (React, TypeScript, TanStack Query; Cloudflare Worker proxying to WordPress); every screen that lacks a real endpoint shows an error state rather than fake data. | The portal's security audit of the WordPress estate proposed **one `PatientGuard` authorization primitive** instead of per-route checks. `MatterAccessPolicy.VisibleTo()` in this project is that idea in C#. |
+| **OpenDental integration** | The medical division's practice-management system, read by SQL (via n8n webhooks) and written through its API for check-ins and automations. | A practice-management database with its own schema that other systems read directly — the same shape as PerfectLaw's single SQL Server database that firms query themselves. |
+| **n8n Cloud** (n8n.ennulife.com) | 60+ workflows moving data between the systems above; HIPAA constraints throughout. | Webhooks, incremental fetch, idempotency, retries, failure queues — the table in section 2. |
 
 ## 2. Integration and automation experience, and what transfers
 
@@ -53,9 +68,11 @@ The platform was different; the engineering problems were the same ones a Graph 
 ## 3. Model Context Protocol (MCP)
 
 MCP is the open protocol through which an AI client (Claude, Copilot, Cursor, a custom agent) calls
-tools and reads resources exposed by a server, over JSON-RPC. I have built and operated MCP servers that
-expose internal data and actions to agents, configured the clients that consume them, and learned the
-practical lessons: tool descriptions are an interface contract, arguments need tight schemas, and the
+tools and reads resources exposed by a server, over JSON-RPC. I have built and operated MCP servers in
+production: HQ Dashboard's `POST /mcp` exposes 37 read-only tools over the company's operating data behind
+OAuth or scoped service tokens; a WordPress MCP server and a HubSpot MCP server (51 tools) sit alongside the
+WordPress monorepo; and I use MCP clients (Claude Code, Cursor) against them daily. The practical lessons:
+tool descriptions are an interface contract, arguments need tight schemas, read-only by default, and the
 server — not the model — must enforce authorization.
 
 MatterDesk includes a working MCP server at `POST /mcp` (Streamable HTTP, protocol `2025-06-18`) with
@@ -86,6 +103,11 @@ what I have shown in this project, and what I am ramping on.
 - Ingestion and ETL: API and file feeds landed into staging, validated, and merged; reporting queries
   that stay fast as volume grows.
 - Operations: backups and restores tested, not assumed; access scoped per application user.
+- Reading another vendor's practice-management schema directly: OpenDental (patients, appointments,
+  payments) queried by SQL for dashboards and automations, and written through its API — the same
+  discipline as querying a law firm's All-in-One database without breaking the product that owns it.
+- Reporting that tells the truth: a value that was not measured renders as "not tracked yet", never as zero;
+  several production fixes were exactly that distinction.
 
 **What this project demonstrates on SQL Server / EF Core:**
 
@@ -114,9 +136,9 @@ marked as ramping.
 | React: screens, components, API wiring, state, async, error handling, UI/API diagnosis | `MatterDesk.Web`: matter list, detail tabs, search, operator switcher, About page; typed API client; loading / error / 403 states; request cancellation on re-render | Demonstrated |
 | Users, profiles and metadata, searching, folder structures, permissions, versions, relationships, full-text | Operators; document profiles with versions; matter-hub relationships; permission predicate in every query; cross-type search (full-text `CONTAINS` on SQL Server noted); folder structures not modelled | Demonstrated (folders: not yet) |
 | Microsoft 365 integrations / Microsoft Graph / Exchange–Outlook | `GraphMailSource`: Entra auth (device code or client credentials), Inbox delta queries with stored delta link, Outlook category marker, idempotent filing; change notifications listed as next step | Demonstrated |
-| Authentication and authorization; OAuth / OIDC | JWT Bearer against any OIDC issuer (Entra), policy scheme, claim → operator mapping, 401 vs 403 vs 404 reasoning | Demonstrated |
+| Authentication and authorization; OAuth / OIDC | JWT Bearer against any OIDC issuer (Entra), policy scheme, claim → operator mapping, 401 vs 403 vs 404 reasoning. In production: Microsoft sign-in via MSAL with Entra ID token validation, role gates and scoped service tokens (HQ Dashboard) | Demonstrated |
 | Azure / Azure DevOps / CI-CD / Git | `azure-pipelines.yml` (build, API tests, web build, Playwright); Git history; the container image runs unchanged on Azure App Service or Container Apps (hosted on AWS App Runner for the demo) | Demonstrated |
-| Automated testing: unit, API, integration, SQL, component, end-to-end, Playwright, regression | 23 xUnit tests through the real pipeline on SQLite in-memory (permissions, concurrency, mail sync, MCP); 6 Playwright tests in Chrome booting both apps; React component tests not yet added | Demonstrated (component tests: not yet) |
+| Automated testing: unit, API, integration, SQL, component, end-to-end, Playwright, regression | 23 xUnit tests through the real pipeline on SQLite in-memory (permissions, concurrency, mail sync, MCP); 6 Playwright tests in Chrome booting both apps; React component tests not yet added. In production: Vitest suites over billing, attribution and lead scoping; PHPUnit / phpcs / lint quality gates; post-deploy bundle-hash verification | Demonstrated (component tests: not yet) |
 | AI-assisted development with human-owned review; detailed specifications to agents | Built spec-first with an agent drafting in small diffs; two agent-introduced bugs caught by tests and documented in the README; daily use of Claude Code, Cursor and Codex-style agents; MCP servers built for agents | Demonstrated |
 | Existing production codebase, not only greenfield | Production automation and integration systems maintained and extended at ENNU; approach to a shared schema described above | Background |
 | 5+ years, strong C# / ASP.NET Core | Working C# / ASP.NET Core 8 in this repository; depth across the rest of the stack from prior roles; the project exists so the C# can be read rather than asserted | Demonstrated |

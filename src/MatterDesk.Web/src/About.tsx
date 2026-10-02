@@ -1,9 +1,18 @@
 const platform = [
   ['Microsoft 365', 'Exchange Online (mail, calendar, contacts), SharePoint / OneDrive, Teams.', 'Where a firm’s email lives; what PLSync and email profiling read and write.'],
-  ['Entra ID', 'Identity: app registrations, OAuth 2.0 / OIDC, delegated vs application permissions, admin consent.', 'Issues every token a Graph call carries.'],
+  ['Entra ID', 'Identity: app registrations, OAuth 2.0 / OIDC, delegated vs application permissions, admin consent.', 'Issues every token a Graph call carries. Prior use: ENNU’s HQ Dashboard signs staff in with Microsoft accounts (MSAL) and validates the Entra token on every API call.'],
   ['Microsoft Graph', 'One REST API over Microsoft 365 data: delta queries, change notifications, $batch, throttling.', 'The replacement for EWS: mail, calendar and contact sync, Outlook markers.'],
   ['Azure', 'Cloud infrastructure: App Service, Azure SQL, Key Vault, Storage, Monitor.', 'Where AIM365 is hosted — independent of M365 and Graph.'],
   ['EWS', 'The SOAP-era Exchange API. Phased disablement from 1 Oct 2026; removed 1 Apr 2027.', 'What the current integrations were built against, and why the Graph work has a deadline.'],
+]
+
+const estate = [
+  ['HQ Dashboard', 'React / TypeScript + Cloudflare Worker API joining OpenDental, MindBody, HubSpot, Meta & Google Ads, GA4, Stripe, Paubox, Teams; cron sweeps; Vitest suites; deploy-then-verify CI.', 'Microsoft sign-in with Entra token validation; a production MCP server with 37 read-only tools behind OAuth / service tokens; “not measured” never renders as zero.'],
+  ['ennueco (WordPress monorepo)', '~45,000 PHP files, 113 custom plugins: assessments, biomarker scoring, LabCorp PDF parsing, onboarding, e-signature, HubSpot (42+ field mappings), memberships, payments; lint / phpcs / PHPUnit gates.', 'Working inside a large existing production codebase: backup-first deploys, version verification, cache purge, hot-patch recovery.'],
+  ['start.ennulife.com', 'React SPA lead funnel: nine quizzes, eleven persona pages, drip sequences; HubSpot, Firestore, GTM server-side tagging; 46 unit tests.', 'React across the API boundary at production volume.'],
+  ['checkin', 'Passwordless weekly check-in writing to the patient’s OpenDental chart; n8n logic; Paubox; Teams; admin behind Microsoft sign-in.', 'AES-256-GCM tokens, one submission per day, outlier confirmation, no PHI in the repo.'],
+  ['portal / onboarding', 'Next-gen patient portal and seven-step onboarding app; screens without a real endpoint show an error, never fake data.', 'The security audit proposed one PatientGuard authorization primitive — MatterAccessPolicy.VisibleTo() is that idea in C#.'],
+  ['OpenDental + n8n', 'Practice-management database read by SQL and written through its API; 60+ workflows under HIPAA constraints.', 'A vendor schema other systems query directly — the same shape as PerfectLaw’s single SQL Server database.'],
 ]
 
 const coverage = [
@@ -13,11 +22,11 @@ const coverage = [
   ['React across the API boundary', 'This screen: list, detail tabs, search, operator switcher; typed client; loading / error / 403 states', 'Demonstrated'],
   ['Profiles, metadata, search, folders, permissions, versions, relationships, full-text', 'Document profiles with versions; matter-hub relationships; predicate in every query; cross-type search. Folders not modelled', 'Demonstrated (folders: not yet)'],
   ['Microsoft 365 / Graph / Exchange–Outlook', 'GraphMailSource: Entra auth, Inbox delta queries, Outlook category marker, idempotent filing', 'Demonstrated'],
-  ['Authentication and authorization; OAuth / OIDC', 'JWT Bearer against any OIDC issuer; policy scheme; claim → operator mapping', 'Demonstrated'],
+  ['Authentication and authorization; OAuth / OIDC', 'JWT Bearer against any OIDC issuer; policy scheme; claim → operator mapping. In production: MSAL sign-in with Entra ID token validation, role gates, scoped service tokens', 'Demonstrated'],
   ['Azure DevOps / CI-CD / Git', 'azure-pipelines.yml; Git history; the same container runs on Azure App Service or Container Apps', 'Demonstrated'],
   ['Automated testing incl. Playwright', '23 xUnit tests through the real pipeline; 6 Playwright tests in Chrome. React component tests not yet added', 'Demonstrated (component tests: not yet)'],
   ['AI-assisted development with human-owned review', 'Spec first, small diffs, every change read and run; two agent-introduced bugs caught by tests; MCP server at /mcp', 'Demonstrated'],
-  ['Existing production codebase, not only greenfield', 'Production systems maintained and modernized at ENNU Life without interrupting operations', 'Background'],
+  ['Existing production codebase, not only greenfield', 'A 113-plugin WordPress monorepo and a 27-repository estate maintained in production; backup-first deploys, hot-patch recovery, audit → single authorization primitive', 'Demonstrated (different stack)'],
   ['5+ years, strong C# / ASP.NET Core', 'Working C# / ASP.NET Core 8 in this repository; 20 years across the rest of the stack; the project exists so the C# can be read rather than asserted', 'Demonstrated'],
 ]
 
@@ -66,6 +75,13 @@ export default function About() {
         through Graph; the API itself can be hosted anywhere.
       </p>
 
+      <h2>The production estate behind these statements (ENNU, 2025–2026)</h2>
+      <p>
+        Twenty-seven repositories across two GitHub organizations run ENNU’s digital side. The six below are the live core and
+        the ones relevant to this role; facts are from the repositories themselves as of 2 October 2026.
+      </p>
+      <Grid head={['System', 'What it is', 'Why it is relevant here']} rows={estate} />
+
       <h2>Integration and automation experience, and what transfers</h2>
       <p>
         At ENNU Life (CTO &amp; AI Architect, 2025–2026) I built and ran the automation layer that connected a multi-state
@@ -82,9 +98,11 @@ export default function About() {
       <h2>Model Context Protocol (MCP)</h2>
       <p>
         MCP is the open protocol through which an AI client calls tools and reads resources exposed by a server over JSON-RPC.
-        I have built and operated MCP servers that expose internal data and actions to agents, configured the clients that use
-        them, and learned the practical lessons: tool descriptions are an interface contract, arguments need tight schemas, and
-        the server, not the model, must enforce authorization.
+        I have built and operated MCP servers in production: HQ Dashboard’s <span className="mono">POST /mcp</span> exposes 37
+        read-only tools over the company’s operating data behind OAuth or scoped service tokens; a WordPress MCP server and a
+        HubSpot MCP server (51 tools) sit alongside the monorepo; and I use MCP clients (Claude Code, Cursor) against them daily.
+        The practical lessons: tool descriptions are an interface contract, arguments need tight schemas, read-only by default,
+        and the server, not the model, must enforce authorization.
       </p>
       <p>
         This API includes a working MCP server at <span className="mono">POST /mcp</span> with three tools:
@@ -100,7 +118,8 @@ export default function About() {
         Server. What transfers: schema change on live systems
         (additive migrations, batched backfills, zero-downtime cut-overs); indexing from slow-query logs and execution plans;
         transactions, isolation and optimistic concurrency; ingestion and ETL through staging tables; tested backups and
-        per-application access. What this project shows on SQL Server / EF Core: the permission predicate as an
+        per-application access; reading another vendor’s practice-management schema (OpenDental) directly by SQL for dashboards
+        and automations without breaking the product that owns it. What this project shows on SQL Server / EF Core: the permission predicate as an
         <span className="mono"> EXISTS</span> probe with the index to serve it, explicit indexes, a concurrency token that maps to
         <span className="mono"> rowversion</span>, a server-side <span className="mono">UNION ALL</span> search, and transaction
         boundaries where they belong. What I am actively ramping on: T-SQL idioms, execution plans in SSMS, snapshot isolation,

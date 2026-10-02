@@ -119,6 +119,15 @@ interpreted locally, so the server's authorization is the only authorization:
 `dotnet publish src/MatterDesk.Cli -c Release -r win-x64` (or `linux-x64`, `osx-arm64`) produces a single
 self-contained file with no .NET install required.
 
+**Local client (EXE).** Prebuilt zips — `matterdesk-cli-win-x64.zip` (`matterdesk.exe`),
+`matterdesk-cli-linux-x64.zip`, `matterdesk-cli-osx-arm64.zip` — are attached to the GitHub Release; each
+holds one self-contained executable, nothing to install. `connectors/install.sh` / `install.ps1` download
+the right one and print the Claude Desktop / Cursor snippet with the absolute path filled in. Ready-made
+connector files for Claude Desktop, Claude.ai, ChatGPT, Cursor and VS Code, and the three ways to connect
+(header, header-less `/mcp/{operator}` URL, local stdio bridge), are in
+**[connectors/README.md](connectors/README.md)**. A captured run of `matterdesk demo` against the hosted
+API is in [docs/cli-demo-output.txt](docs/cli-demo-output.txt).
+
 ## Hosted demo
 
 A hosted copy runs with the seeded demo data (no real client data) and the operator header enabled
@@ -177,7 +186,8 @@ src/MatterDesk.Web react screen: matter list, documents/email tabs, search, oper
 src/MatterDesk.Cli  local executable: REST walkthrough (`demo`), ad-hoc calls, and a stdio MCP bridge to the hosted endpoint
 tests/MatterDesk.Api.Tests  xUnit + WebApplicationFactory + SQLite in-memory + FakeMailSource
 tests/e2e                   Playwright (Chrome) with webServer bootstrapping both apps
-docs/                       BACKGROUND.md (platform model, integration experience, MCP, data), screenshots
+connectors/                 MCP connector files (Claude Desktop, Claude.ai, ChatGPT, Cursor, VS Code) and CLI install scripts
+docs/                       BACKGROUND.md (platform model, integration experience, MCP, data), screenshots, cli-demo-output.txt
 azure-pipelines.yml         build, API tests, web build, Playwright
 ```
 
