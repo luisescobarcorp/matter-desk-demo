@@ -15,6 +15,7 @@ namespace MatterDesk.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("mcp")]
+[Route("mcp/{operatorCode:alpha:length(2,8)}")]   // header-less variant for remote connectors (demo only; see DevHeaderAuthenticationHandler)
 public sealed class McpController(MatterTools tools, ICurrentOperator me) : ControllerBase
 {
     public const string ProtocolVersion = "2025-06-18";

@@ -82,10 +82,16 @@ public sealed class DevHeaderAuthenticationHandler(
 {
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        if (!Request.Headers.TryGetValue(Options.HeaderName, out var raw) || string.IsNullOrWhiteSpace(raw))
+        // Header first; otherwise the /mcp/{operatorCode} route segment, so remote MCP connectors that
+        // cannot send custom headers (Claude.ai, ChatGPT) can still attach to the demo as a named operator.
+        string? code = Request.Headers.TryGetValue(Options.HeaderName, out var raw) && !string.IsNullOrWhiteSpace(raw)
+            ? raw.ToString()
+            : Context.GetRouteValue("operatorCode")?.ToString();
+
+        if (string.IsNullOrWhiteSpace(code))
             return Task.FromResult(AuthenticateResult.NoResult());
 
-        var identity = new ClaimsIdentity([new Claim(Schemes.OperatorCodeClaim, raw.ToString().Trim().ToUpperInvariant())], Scheme.Name);
+        var identity = new ClaimsIdentity([new Claim(Schemes.OperatorCodeClaim, code.Trim().ToUpperInvariant())], Scheme.Name);
         return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme.Name)));
     }
 }

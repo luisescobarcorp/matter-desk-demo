@@ -81,6 +81,31 @@ public sealed class McpTests : IClassFixture<ApiFactory>
         Assert.True(missing.GetProperty("isError").GetBoolean());
     }
 
+    /// <summary>
+    /// Remote connectors that cannot send custom headers attach as /mcp/{operatorCode}. The route segment must be
+    /// subject to exactly the same operator resolution and predicate as the header, and an unknown code is still 403.
+    /// </summary>
+    [Fact]
+    public async Task Operator_code_in_the_route_is_the_same_boundary_as_the_header()
+    {
+        var anon = _f.CreateClient();
+
+        var les = await anon.PostAsJsonAsync("/mcp/LES", Rpc("tools/call", new { name = "search_matters", arguments = new { query = "Falcon" } }));
+        Assert.Equal(HttpStatusCode.OK, les.StatusCode);
+        Assert.Equal(0, (await les.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("result").GetProperty("structuredContent").GetProperty("total").GetInt32());
+
+        var jdu = await anon.PostAsJsonAsync("/mcp/jdu", Rpc("tools/call", new { name = "search_matters", arguments = new { query = "Falcon" } }));
+        Assert.Equal(HttpStatusCode.OK, jdu.StatusCode);
+        Assert.True((await jdu.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("result").GetProperty("structuredContent").GetProperty("total").GetInt32() >= 1);
+
+        var unknown = await anon.PostAsJsonAsync("/mcp/NOPE", Rpc("tools/list"));
+        Assert.Equal(HttpStatusCode.Forbidden, unknown.StatusCode);
+
+        // A header, when present, wins over the route segment.
+        var headerWins = await _f.As("LES").PostAsJsonAsync("/mcp/JDU", Rpc("tools/call", new { name = "search_matters", arguments = new { query = "Falcon" } }));
+        Assert.Equal(0, (await headerWins.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("result").GetProperty("structuredContent").GetProperty("total").GetInt32());
+    }
+
     [Fact]
     public async Task Unknown_method_is_a_json_rpc_error_not_a_crash()
     {
