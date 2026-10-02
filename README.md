@@ -139,7 +139,9 @@ irm https://raw.githubusercontent.com/luisescobarcorp/matter-desk-demo/main/conn
 connector files for Claude Desktop, Claude.ai, ChatGPT, Cursor and VS Code, and the three ways to connect
 (header, header-less `/mcp/{operator}` URL, local stdio bridge), are in
 **[connectors/README.md](connectors/README.md)**. A captured run of `matterdesk demo` against the hosted
-API is in [docs/cli-demo-output.txt](docs/cli-demo-output.txt).
+API is in [docs/cli-demo-output.txt](docs/cli-demo-output.txt). A recorded end-to-end validation — raw
+protocol, Claude via Anthropic's MCP connector, and the stdio bridge — is in
+[docs/connector-validation.md](docs/connector-validation.md).
 
 ## Hosted demo
 

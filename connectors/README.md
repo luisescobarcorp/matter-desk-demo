@@ -39,6 +39,10 @@ irm https://raw.githubusercontent.com/luisescobarcorp/matter-desk-demo/main/conn
 
 ## Verify first
 
+A recorded end-to-end validation of all three paths — raw protocol with curl, Claude via Anthropic's MCP
+connector (`mcp_servers`) against `/mcp/JDU` and `/mcp/LES`, and the stdio bridge — is in
+[`docs/connector-validation.md`](../docs/connector-validation.md).
+
 ```bash
 matterdesk demo                      # 20 steps against the hosted API as LES, each with what the code proves
 matterdesk demo --operator JDU
