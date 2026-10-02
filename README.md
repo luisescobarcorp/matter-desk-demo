@@ -32,6 +32,22 @@ transfers to a Graph sync layer, MCP, and my database experience stated exactly 
 | **Data access** | EF Core with explicit indexes in `OnModelCreating` (`(OperatorId, MatterId)` for the permission probe; `(MatterId, DocumentType)`; `(MatterId, ExternalMessageId)` unique). | The predicate and the hot paths have the indexes they need. Stored procedures would still be used where a rule is shared with a desktop client. |
 | **MCP** | `POST /mcp` is a minimal Model Context Protocol server (Streamable HTTP, protocol `2025-06-18`) exposing `search_matters`, `get_matter` and `list_documents`. Tools run under the authenticated operator and reuse `SearchService` and `MatterAccessPolicy`. | An agent (Copilot, Claude, Cursor, a custom assistant) gets governed, permission-aware access to the same data with no copy of it anywhere. The server, not the model, enforces who sees what. |
 
+## Coverage against the posting
+
+| Posting line | Here |
+|---|---|
+| REST conventions (routing, methods, status codes, validation, errors, authorization, filtering, sorting) | `Controllers/`, problem+json everywhere, Swagger |
+| SQL Server: indexes, plans, concurrency, transactions, large DMS data | `Data/MatterDeskDbContext.cs`, `Document.Version`, paging, server-side `UNION ALL` |
+| React across the API boundary | `src/MatterDesk.Web` |
+| Profiles, metadata, search, permissions, versions, relationships, full-text | `Domain/`, `Authorization/`, `Search/` |
+| Microsoft Graph / Exchange–Outlook | `Mail/GraphMailSource.cs`, `Mail/EmailProfilingService.cs` |
+| OAuth / OIDC | `Auth/`, `Program.cs` |
+| Azure DevOps / CI | `azure-pipelines.yml` |
+| Automated testing incl. Playwright | `tests/` (23 API + 6 e2e) |
+| AI-assisted development with human-owned review | "How this was built" below; MCP server at `/mcp` |
+
+The full line-by-line map, including what is marked *ramping* or *not yet*, is in [docs/BACKGROUND.md](docs/BACKGROUND.md#5-the-posting-requirement-by-requirement).
+
 ## Run it
 
 Prerequisites: .NET 8 SDK, Node 20+, Google Chrome (for Playwright `channel: 'chrome'`).

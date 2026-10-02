@@ -6,6 +6,21 @@ const platform = [
   ['EWS', 'The SOAP-era Exchange API. Phased disablement from 1 Oct 2026; removed 1 Apr 2027.', 'What the current integrations were built against, and why the Graph work has a deadline.'],
 ]
 
+const coverage = [
+  ['REST conventions: routing, methods, status codes, validation, errors, authorization, filtering, sorting', 'Controllers; 200/201/400/401/403/404/409/428; problem+json everywhere; filters and paging; Swagger', 'Demonstrated'],
+  ['SQL Server: indexes, execution plans, concurrency, transactions, large DMS data', 'Explicit indexes; concurrency token → rowversion; one SaveChanges per unit of work; server-side UNION ALL. SSMS plans and T-SQL idioms: ramping from MySQL', 'Demonstrated / ramping'],
+  ['Stored procedures when appropriate', 'Keep procedures where a rule is shared with desktop AIM; EF Core for new surfaces', 'Background'],
+  ['React across the API boundary', 'This screen: list, detail tabs, search, operator switcher; typed client; loading / error / 403 states', 'Demonstrated'],
+  ['Profiles, metadata, search, folders, permissions, versions, relationships, full-text', 'Document profiles with versions; matter-hub relationships; predicate in every query; cross-type search. Folders not modelled', 'Demonstrated (folders: not yet)'],
+  ['Microsoft 365 / Graph / Exchange–Outlook', 'GraphMailSource: Entra auth, Inbox delta queries, Outlook category marker, idempotent filing', 'Demonstrated'],
+  ['Authentication and authorization; OAuth / OIDC', 'JWT Bearer against any OIDC issuer; policy scheme; claim → operator mapping', 'Demonstrated'],
+  ['Azure DevOps / CI-CD / Git', 'azure-pipelines.yml; Git history; the same container runs on Azure App Service or Container Apps', 'Demonstrated'],
+  ['Automated testing incl. Playwright', '23 xUnit tests through the real pipeline; 6 Playwright tests in Chrome. React component tests not yet added', 'Demonstrated (component tests: not yet)'],
+  ['AI-assisted development with human-owned review', 'Spec first, small diffs, every change read and run; two agent-introduced bugs caught by tests; MCP server at /mcp', 'Demonstrated'],
+  ['Existing production codebase, not only greenfield', 'Production systems maintained and modernized at ENNU Life without interrupting operations', 'Background'],
+  ['5+ years, strong C# / ASP.NET Core', 'Working C# / ASP.NET Core 8 in this repository; 20 years across the rest of the stack; the project exists so the C# can be read rather than asserted', 'Demonstrated'],
+]
+
 const patterns = [
   ['OAuth clients & token lifecycle', 'Client-credential and refresh flows against vendor APIs; secrets out of workflows.', 'Entra app registration; Azure.Identity; delegated vs application permissions.'],
   ['Webhook receipt', 'Inbound events validated, de-duplicated and queued before side effects.', 'Graph change notifications: validation token, clientState, lifecycle renewal.'],
@@ -14,6 +29,7 @@ const patterns = [
   ['Throttling & retries', 'Vendor 429s with backoff and dead-letter queues.', 'Graph 429 / Retry-After; per-tenant throttling.'],
   ['Document ingestion', 'LabCorp PDF results parsed, validated, attached to the right record.', 'Attachments and metadata profiled onto the matter.'],
   ['Data boundary', 'PHI never left approved systems (HIPAA).', 'Client and privileged data stay inside the firm’s boundary; approved AI tooling only.'],
+  ['Access control & audit', 'RBAC, AES-256-GCM at rest, audit trails, consent tracking.', 'Matter security as a query predicate; 401 / 403 / 404 reasoning; audit rows.'],
   ['Observability', 'Run logs, failure queues, alerting.', 'Sync state table, per-operator cursor, audit rows.'],
 ]
 
@@ -52,10 +68,14 @@ export default function About() {
 
       <h2>Integration and automation experience, and what transfers</h2>
       <p>
-        At ENNU I built and ran the automation layer that connected the business to outside systems: an n8n workflow platform
-        plus a local server, receiving webhooks, polling partner APIs, ingesting LabCorp PDF results into structured data,
-        pushing results onward through REST APIs, and using hosted and local language models for classification and extraction,
-        inside HIPAA constraints. The platform was different; the engineering problems were the same ones a Graph sync layer has.
+        At ENNU Life (CTO &amp; AI Architect, 2025–2026) I built and ran the automation layer that connected a multi-state
+        telehealth business to outside systems: an n8n workflow platform plus a self-hosted server, receiving webhooks, polling
+        partner APIs, ingesting LabCorp PDF results into structured data (PDF parsing and OCR), keeping a 69K-contact CRM instance
+        with 300+ synced fields consistent with operational systems, pushing results onward through REST APIs, and using hosted
+        and local language models for classification and extraction — under HIPAA controls (AES-256-GCM, RBAC, audit logging,
+        consent tracking). Alongside it the platform was modernized to a modular, API-first, event-driven architecture (90+
+        components) without interrupting operations. The platform was different; the engineering problems were the same ones a
+        Graph sync layer has.
       </p>
       <Grid head={['Pattern', 'What I did at ENNU', 'Graph-era equivalent']} rows={patterns} />
 
@@ -76,7 +96,8 @@ export default function About() {
 
       <h2>Database and data</h2>
       <p>
-        My production database depth is on MySQL rather than SQL Server. What transfers: schema change on live systems
+        My production database depth is on MySQL 8.0 (behind CRM-connected and multi-tenant SaaS systems) rather than SQL
+        Server. What transfers: schema change on live systems
         (additive migrations, batched backfills, zero-downtime cut-overs); indexing from slow-query logs and execution plans;
         transactions, isolation and optimistic concurrency; ingestion and ETL through staging tables; tested backups and
         per-application access. What this project shows on SQL Server / EF Core: the permission predicate as an
@@ -86,6 +107,13 @@ export default function About() {
         full-text <span className="mono">CONTAINS</span>, stored procedures shared with a desktop client, SQL Agent. I would rather
         be exact about this than overstate it.
       </p>
+
+      <h2>The posting, requirement by requirement</h2>
+      <p>
+        The listing (“Senior Full-Stack .NET / REST API Developer for Product Integration with Microsoft Office 365”) against where
+        each line is demonstrated: in this project, in prior work, or honestly marked as ramping.
+      </p>
+      <Grid head={['Posting requirement', 'Where it is demonstrated', 'Status']} rows={coverage} />
 
       <h2>How I would work from day one</h2>
       <ul>

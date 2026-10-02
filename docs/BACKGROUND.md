@@ -25,11 +25,16 @@ can be hosted anywhere.
 
 ## 2. Integration and automation experience, and what transfers
 
-At ENNU I built and ran the automation layer that connected the business to outside systems: an n8n
-workflow platform plus a local server, receiving webhooks from external services, polling partner APIs,
-ingesting LabCorp PDF results into structured data, pushing results onward through REST APIs, and using
-hosted and local language models for classification and extraction — all inside HIPAA constraints, where
-the boundary of what data may go where is not negotiable.
+At ENNU Life (CTO & AI Architect, 2025–2026) I built and ran the automation layer that connected a
+multi-state telehealth business to outside systems: an n8n workflow platform plus a self-hosted server,
+receiving webhooks from external services, polling partner APIs, ingesting LabCorp PDF results into
+structured data (document intelligence: PDF parsing and OCR), keeping a 69K-contact CRM instance with
+300+ synced fields consistent with the operational systems, pushing results onward through REST APIs, and
+using hosted and local language models for classification and extraction — all under HIPAA controls
+(AES-256-GCM encryption, RBAC, audit logging, consent tracking), where the boundary of what data may go
+where is not negotiable. Alongside it the platform was modernized to a modular, API-first, event-driven
+architecture (90+ components, typed event bus) without interrupting operations — the same brownfield
+discipline a shared, decades-old schema demands.
 
 The platform was different; the engineering problems were the same ones a Graph sync layer has.
 
@@ -42,6 +47,7 @@ The platform was different; the engineering problems were the same ones a Graph 
 | Throttling and retries | Vendor 429s handled with backoff and dead-letter queues. | Graph 429 / `Retry-After`; per-tenant throttling in a background worker. |
 | Document ingestion | PDF results parsed into fields, validated, attached to the right record. | Attachments and message metadata profiled onto the matter; keywords and document type extracted. |
 | Data boundary | PHI never left approved systems; no external AI tool saw it without a BAA and an approved configuration. | Client data and privileged material stay inside the firm's boundary; AI tooling only in the configuration the company approves. |
+| Access control and audit | RBAC, AES-256-GCM at rest, audit trails and consent tracking as standing controls. | Matter security as a query predicate; 401 / 403 / 404 reasoning; audit rows for denied access and profile changes. |
 | Observability | Run logs, failure queues and alerting so a silent failure became a visible one. | Sync state table, per-operator cursor, audit rows for denied access and profile changes. |
 
 ## 3. Model Context Protocol (MCP)
@@ -69,7 +75,7 @@ that stitched-together stacks cannot offer without integration work.
 My production database depth is on MySQL rather than SQL Server, so this section says what transfers,
 what I have shown in this project, and what I am ramping on.
 
-**What I have done in production (MySQL, live systems):**
+**What I have done in production (MySQL 8.0 behind CRM-connected and multi-tenant SaaS systems, live):**
 
 - Schema design and change on running systems: additive migrations, backfills in batches, cut-overs
   without downtime.
@@ -94,7 +100,28 @@ reading execution plans in SSMS, `rowversion` and snapshot isolation, full-text 
 stored procedures shared with a desktop client, SQL Agent jobs, and the EF Core SQL Server provider's
 translation behaviour. I would rather be exact about this than overstate it.
 
-## 5. How I would work from day one
+## 5. The posting, requirement by requirement
+
+The Indeed listing ("Senior Full-Stack .NET / REST API Developer for Product Integration with Microsoft
+Office 365") against where each line is demonstrated — in this project, in prior work, or honestly
+marked as ramping.
+
+| Posting requirement | Where it is demonstrated | Status |
+|---|---|---|
+| REST API conventions: routing, methods, status codes, validation, error handling, authorization, filtering, sorting | Controllers: attribute routing; 200/201/400/401/403/404/409/428; DataAnnotations + RFC 7807 `problem+json` for every error; `[Authorize]` + operator middleware; filters on `areaOfLaw` / `clientNumber` / `documentType`; ordered, paged lists; Swagger/OpenAPI with XML comments | Demonstrated |
+| SQL Server: query optimisation, indexes, execution plans, transactional consistency, optimistic concurrency, large DMS datasets | EF Core SQL Server provider; explicit indexes for the permission probe and hot paths; concurrency token → `rowversion`; profile + first version in one `SaveChanges`; mandatory pagination; `UNION ALL` search kept server-side. SSMS execution plans and T-SQL idioms: ramping from MySQL `EXPLAIN` experience | Demonstrated / ramping |
+| Stored procedures when appropriate | Position stated in the README: keep procedures where a rule is shared with desktop AIM; EF Core for new surfaces | Background |
+| React: screens, components, API wiring, state, async, error handling, UI/API diagnosis | `MatterDesk.Web`: matter list, detail tabs, search, operator switcher, About page; typed API client; loading / error / 403 states; request cancellation on re-render | Demonstrated |
+| Users, profiles and metadata, searching, folder structures, permissions, versions, relationships, full-text | Operators; document profiles with versions; matter-hub relationships; permission predicate in every query; cross-type search (full-text `CONTAINS` on SQL Server noted); folder structures not modelled | Demonstrated (folders: not yet) |
+| Microsoft 365 integrations / Microsoft Graph / Exchange–Outlook | `GraphMailSource`: Entra auth (device code or client credentials), Inbox delta queries with stored delta link, Outlook category marker, idempotent filing; change notifications listed as next step | Demonstrated |
+| Authentication and authorization; OAuth / OIDC | JWT Bearer against any OIDC issuer (Entra), policy scheme, claim → operator mapping, 401 vs 403 vs 404 reasoning | Demonstrated |
+| Azure / Azure DevOps / CI-CD / Git | `azure-pipelines.yml` (build, API tests, web build, Playwright); Git history; the container image runs unchanged on Azure App Service or Container Apps (hosted on AWS App Runner for the demo) | Demonstrated |
+| Automated testing: unit, API, integration, SQL, component, end-to-end, Playwright, regression | 23 xUnit tests through the real pipeline on SQLite in-memory (permissions, concurrency, mail sync, MCP); 6 Playwright tests in Chrome booting both apps; React component tests not yet added | Demonstrated (component tests: not yet) |
+| AI-assisted development with human-owned review; detailed specifications to agents | Built spec-first with an agent drafting in small diffs; two agent-introduced bugs caught by tests and documented in the README; daily use of Claude Code, Cursor and Codex-style agents; MCP servers built for agents | Demonstrated |
+| Existing production codebase, not only greenfield | Production automation and integration systems maintained and extended at ENNU; approach to a shared schema described above | Background |
+| 5+ years, strong C# / ASP.NET Core | Working C# / ASP.NET Core 8 in this repository; depth across the rest of the stack from prior roles; the project exists so the C# can be read rather than asserted | Demonstrated |
+
+## 6. How I would work from day one
 
 - Small, specific tasks taken as seriously as large ones; a bug fix with a test is a good first week.
 - Everything inside company policy: approved AI tooling only, no source or client data outside the
