@@ -37,14 +37,14 @@ public sealed class MatterTools(MatterDeskDbContext db, SearchService search, IC
     public static IReadOnlyList<ToolDescriptor> Descriptors { get; } =
     [
         new("search_matters",
-            "Search matters, document profiles and profiled email the current operator may see. Returns up to `limit` hits (default 10, max 50), newest first.",
+            "Search matters, documents and email visible to the operator; newest hits first.",
             Schema(("query", "string", "Text to match against matter numbers, titles, client names, document titles/keywords, and email subjects. At least two characters.", true),
                    ("limit", "integer", "Maximum number of hits to return.", false))),
         new("get_matter",
-            "Return the profile of one matter by its matter number (for example 10042-0003), including whether the operator may edit it.",
+            "Get one matter's profile by matter number, including whether the operator may edit it.",
             Schema(("matterNumber", "string", "Matter number in CCCCC-MMMM form.", true))),
         new("list_documents",
-            "List the document profiles filed to a matter, newest first. Fails if the matter is restricted and the operator has no grant.",
+            "List the documents filed to a matter, newest first; errors if the operator has no access.",
             Schema(("matterNumber", "string", "Matter number in CCCCC-MMMM form.", true),
                    ("limit", "integer", "Maximum number of documents to return (default 25, max 50).", false))),
     ];

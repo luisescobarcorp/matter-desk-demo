@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using MatterDesk.Api.Activities;
 using MatterDesk.Api.Auth;
 using MatterDesk.Api.Mcp;
 using Microsoft.AspNetCore.Authorization;
@@ -16,7 +17,7 @@ namespace MatterDesk.Api.Controllers;
 [Authorize]
 [Route("mcp")]
 [Route("mcp/{operatorCode:alpha:length(2,8)}")]   // header-less variant for remote connectors (demo only; see DevHeaderAuthenticationHandler)
-public sealed class McpController(MatterTools tools, ICurrentOperator me) : ControllerBase
+public sealed class McpController(MatterTools tools, ICurrentOperator me, IActivityRecorder activity) : ControllerBase
 {
     public const string ProtocolVersion = "2025-06-18";
     private const int ParseError = -32700, InvalidRequest = -32600, MethodNotFound = -32601, InvalidParams = -32602;
@@ -45,7 +46,11 @@ public sealed class McpController(MatterTools tools, ICurrentOperator me) : Cont
             "initialize" => Result(id, new JsonObject
             {
                 ["protocolVersion"] = ProtocolVersion,
-                ["capabilities"] = new JsonObject { ["tools"] = new JsonObject { ["listChanged"] = false } },
+                ["capabilities"] = new JsonObject
+                {
+                    ["tools"] = new JsonObject { ["listChanged"] = false },
+                    ["prompts"] = new JsonObject { ["listChanged"] = false },
+                },
                 ["serverInfo"] = new JsonObject { ["name"] = "matterdesk", ["version"] = "0.1.0" },
                 ["instructions"] = $"MatterDesk tools act as operator {me.Code}. Restricted matters the operator has not been granted are invisible; do not try to infer their existence.",
             }),
@@ -58,6 +63,11 @@ public sealed class McpController(MatterTools tools, ICurrentOperator me) : Cont
                 }).ToArray()),
             }),
             "tools/call" => await CallAsync(id, @params, ct),
+            "prompts/list" => Result(id, new JsonObject
+            {
+                ["prompts"] = new JsonArray(MatterPrompts.Descriptors.Select(p => (JsonNode)MatterPrompts.ToJson(p)).ToArray()),
+            }),
+            "prompts/get" => await GetPromptAsync(id, @params, ct),
             _ => Error(id, MethodNotFound, $"Method '{method}' is not supported by this server."),
         };
         return Ok(result);
@@ -77,7 +87,9 @@ public sealed class McpController(MatterTools tools, ICurrentOperator me) : Cont
             return Error(id, InvalidParams, "`params.name` is required.");
 
         JsonElement? args = p.TryGetProperty("arguments", out var a) ? a : null;
-        var r = await tools.CallAsync(nameEl.GetString()!, args, ct);
+        var name = nameEl.GetString()!;
+        var r = await tools.CallAsync(name, args, ct);
+        await activity.RecordAsync(name, TargetOf(args), 200, Describe(name, args, r), OutcomeOf(r), ct);
 
         var result = new JsonObject
         {
@@ -86,6 +98,54 @@ public sealed class McpController(MatterTools tools, ICurrentOperator me) : Cont
         };
         if (r.Structured is not null) result["structuredContent"] = JsonSerializer.SerializeToNode(r.Structured, Json.Indented);
         return Result(id, result);
+    }
+
+    private async Task<JsonObject> GetPromptAsync(JsonNode id, JsonElement? @params, CancellationToken ct)
+    {
+        if (@params is not { ValueKind: JsonValueKind.Object } p || !p.TryGetProperty("name", out var nameEl) || nameEl.ValueKind != JsonValueKind.String)
+            return Error(id, InvalidParams, "`params.name` is required.");
+
+        var name = nameEl.GetString()!;
+        JsonElement? args = p.TryGetProperty("arguments", out var a) ? a : null;
+
+        if (MatterPrompts.MissingRequiredArgument(name, args) is { } missing)
+            return Error(id, InvalidParams, $"Prompt '{name}' requires argument `{missing}`.");
+
+        var prompt = MatterPrompts.Get(name, args, me.Code);
+        if (prompt is null) return Error(id, InvalidParams, $"Unknown prompt '{name}'.");
+
+        var target = MatterPrompts.Arg(args, "query") is { Length: > 0 } q ? q : MatterPrompts.Arg(args, "matterNumber") is { Length: > 0 } m ? m : null;
+        await activity.RecordAsync($"prompt.{name}", target, 200, $"prompt.{name}{(target is null ? "" : $" \"{target}\"")} → prompt delivered", ct: ct);
+        return Result(id, prompt);
+    }
+
+    // ----- activity summaries -------------------------------------------------------------------------------
+
+    private static string? TargetOf(JsonElement? args) =>
+        MatterPrompts.Arg(args, "query") is { Length: > 0 } q ? q : MatterPrompts.Arg(args, "matterNumber") is { Length: > 0 } m ? m : null;
+
+    private static string OutcomeOf(ToolResult r) =>
+        !r.IsError ? Outcomes.Ok
+        : r.Text.Contains("restricted", StringComparison.OrdinalIgnoreCase) || r.Text.StartsWith("No matter", StringComparison.Ordinal) ? Outcomes.Denied
+        : Outcomes.Error;
+
+    private static string Describe(string name, JsonElement? args, ToolResult r)
+    {
+        var target = TargetOf(args);
+        var head = target is null ? name : $"{name} \"{target}\"";
+        if (r.IsError) return $"{head} → {r.Text.TrimEnd('.')}";
+
+        var data = r.Structured is null ? null : JsonSerializer.SerializeToNode(r.Structured, Json.Indented);
+        string Prop(string key) => data?[key]?.ToJsonString().Trim('"') ?? "?";
+        string Plural(string key, string noun) => $"{Prop(key)} {noun}{(Prop(key) == "1" ? "" : "s")}";
+
+        return name switch
+        {
+            "search_matters" => $"{head} → {Plural("total", "result")}",
+            "list_documents" => $"{head} → {Plural("count", "document")}",
+            "get_matter" => $"{head} → matter returned ({Prop("documentCount")} docs, {(Prop("canEdit") == "true" ? "can edit" : "read only")})",
+            _ => $"{head} → ok",
+        };
     }
 
     private static JsonObject Result(JsonNode id, JsonNode result) =>
