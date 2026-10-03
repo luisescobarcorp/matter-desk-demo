@@ -7,6 +7,21 @@ The MCP server exposes three tools — `search_matters`, `get_matter`, `list_doc
 under the connected operator through the same `MatterAccessPolicy` the REST API uses. The client never
 sees what the operator is not granted.
 
+## Slash commands (MCP prompts)
+
+The server also implements `prompts/list` / `prompts/get`. In **Claude Desktop** type `/` in the message
+box and pick **matterdesk → demo**; in **Cursor** the prompts appear in the MCP panel for the server. They
+work over every path below, including the stdio bridge, which forwards all JSON-RPC methods unchanged.
+
+| Prompt | Arguments | What it asks the model to do |
+|---|---|---|
+| `demo` | none | `search_matters` for "Falcon", `list_documents` on the first hit, `get_matter`, then summarise, state which operator it acted as, and note that every step was recorded in the Activity panel |
+| `find_matter` | `query` (required) | search, present hits as a table (matter number, title, client); if they all belong to one matter, list its documents |
+| `file_check` | `matterNumber` (required) | get the matter, list its documents, flag anything marked privileged, summarise |
+
+Every tool call and prompt get lands in the web app's **Activity** panel within two seconds, tagged `mcp`
+with the operator and outcome — open the hosted URL in a browser next to Claude or Cursor and watch it.
+
 ## Three ways to connect
 
 **(a) Remote HTTP MCP with a header** — for clients that can send custom headers (Cursor, VS Code,
@@ -48,6 +63,7 @@ matterdesk demo                      # 20 steps against the hosted API as LES, e
 matterdesk demo --operator JDU
 matterdesk tools                     # tools/list through MCP
 matterdesk call search_matters query=Falcon   # total 0 as LES, hits as JDU
+echo '{"jsonrpc":"2.0","id":1,"method":"prompts/list"}' | matterdesk mcp --operator JDU   # three prompts, via the bridge
 ```
 
 Or with curl, no install:

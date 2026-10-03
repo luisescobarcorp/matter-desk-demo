@@ -46,7 +46,7 @@ It also covers BTCEdge, a personal real-time trading system (TypeScript, 442K li
 | Microsoft Graph / Exchange–Outlook | `Mail/GraphMailSource.cs`, `Mail/EmailProfilingService.cs` |
 | OAuth / OIDC | `Auth/`, `Program.cs` |
 | Azure DevOps / CI | `azure-pipelines.yml` |
-| Automated testing incl. Playwright | `tests/` (24 API + 6 e2e) |
+| Automated testing incl. Playwright | `tests/` (28 API + 9 e2e) |
 | AI-assisted development with human-owned review | "How this was built" below; MCP server at `/mcp`; `matterdesk mcp` stdio bridge |
 
 The full line-by-line map, including what is marked *ramping* or *not yet*, is in [docs/BACKGROUND.md](docs/BACKGROUND.md#5-the-posting-requirement-by-requirement).
@@ -91,6 +91,28 @@ To point an MCP client at it, configure an HTTP server with URL `http://localhos
 headers (Claude.ai, ChatGPT) can use `http://localhost:5080/mcp/JDU` instead: the route segment is read by
 the same dev-header scheme, so it only exists where that scheme is enabled, a header still wins when both
 are present, and an unknown code is still 403.
+
+**Slash commands.** The server also implements `prompts/list` / `prompts/get` and advertises `prompts` in
+its `initialize` capabilities. Three prompts ship: `demo` (no arguments — search for Falcon, list documents,
+open the matter, report what was visible and as whom), `find_matter` (`query`) and `file_check`
+(`matterNumber`). In Claude Desktop type `/` in the message box and pick **matterdesk → demo**; in Cursor
+the prompts appear in the MCP panel for the server. They work through the stdio bridge unchanged because
+`matterdesk mcp` forwards every JSON-RPC method as-is. Each `prompts/get` is itself recorded in the
+Activity panel as `prompt.<name>`.
+
+## See it happen
+
+The right-hand **Activity** panel on every page of the web app is a live log of governed actions. The API
+writes one `ActivityEvent` row per search, document create/update and MCP tool call (`IActivityRecorder`,
+a single insert on the request's own context), tagged with the operator, the outcome (`ok`, `denied`,
+`conflict`, `error`), the HTTP status and the **channel**: `web` for the browser, `cli` when the request
+carries `X-Client: matterdesk-cli` (the executable sends it by default), `mcp` for anything through `/mcp`.
+The panel polls `GET /api/activity?after=<id>` every two seconds and flashes a toast for each new row, so a
+`search_matters` call made from Claude Desktop or Cursor, a `document.create` from the EXE and a search
+typed into the browser all appear in the same list within a couple of seconds — as the same operator-scoped
+log, including the denied attempts. The feed is visible to any authenticated operator (it carries matter
+numbers, document ids and query text, never titles), which is the point: it is an audit trail of who did
+what through which surface.
 
 ## Local client
 
@@ -159,10 +181,10 @@ including Azure App Service or Azure Container Apps.
 ## Tests
 
 ```bash
-# API integration tests: real pipeline, SQLite in-memory, fake Graph source — 24 tests
+# API integration tests: real pipeline, SQLite in-memory, fake Graph source — 28 tests
 dotnet test
 
-# End-to-end: boots the API and Vite, drives the React screen in Chrome — 6 tests
+# End-to-end: boots the API and Vite, drives the React screen in Chrome — 9 tests
 cd tests/e2e && npm install && npx playwright test
 ```
 
@@ -172,7 +194,8 @@ What the suites prove:
 - **Profiles** — 201 with `Location`, version 1 and one version row; validation errors are `application/problem+json`; `PUT` without `If-Match` → 428; stale version → 409; reload and retry → 200; `ETag` matches the version.
 - **Mail sync** — delta paging across pages; second sync scans zero and resumes from the stored delta link; a message tagged with a restricted matter is **not** filed by an ungranted operator but is by a granted one; marker failure keeps the profile and reports `MarkerSet = false`; per-matter sync files only into that matter and honours edit rights.
 - **MCP** — unauthenticated → 401; `initialize` / `tools/list` describe three tools; `search_matters` for `Falcon` returns zero hits as LES and hits as JDU; `get_matter` / `list_documents` on the restricted matter return an error for LES that does not reveal the title, and data for JDU; an unsupported method is a JSON-RPC `-32601`, not a crash; `/mcp/{operatorCode}` enforces the same boundary as the header, 403 for an unknown code, header wins when both are present.
-- **End-to-end** — the React screen shows the right matters per operator, loads documents and email, shows no results for restricted content, confirms the API returns 403 and a zero-hit search for the ungranted operator, opens the About page from the nav and from `#about`, and exercises the MCP endpoint over HTTP.
+- **Activity and prompts** — an MCP `tools/call` is recorded with channel `mcp`, a readable summary and `denied` for the ungranted operator without leaking the title; REST search is `web` and a document create with `X-Client: matterdesk-cli` is `cli`; `initialize` advertises `prompts`; `prompts/list` returns `demo`, `find_matter`, `file_check`; `prompts/get demo` returns a user message naming the operator and the Activity panel, missing/unknown prompts are `-32602`, and the get is logged as `prompt.demo`.
+- **End-to-end** — the React screen shows the right matters per operator, loads documents and email, shows no results for restricted content, confirms the API returns 403 and a zero-hit search for the ungranted operator, opens the About page from the nav and from `#about`, exercises the MCP endpoint over HTTP, and the Activity panel shows a `web` row for a browser search and an `mcp` row plus a toast for a `tools/call` posted to `/mcp/JDU`.
 
 ## Connect Microsoft Graph (optional)
 
@@ -191,13 +214,14 @@ What the suites prove:
 src/MatterDesk.Api
   Auth/            policy scheme, JWT bearer, dev header scheme, current-operator middleware
   Authorization/   MatterAccessPolicy — the predicate, once
-  Controllers/     Matters, Documents, Search, MailSync, Mcp (JSON-RPC over Streamable HTTP)
+  Activities/      IActivityRecorder — one row per governed action with its channel (web | cli | mcp)
+  Controllers/     Matters, Documents, Search, Activity, MailSync, Mcp (JSON-RPC over Streamable HTTP: tools + prompts)
   Data/            DbContext (indexes, concurrency token bump), Seed
-  Domain/          Operator, Client, Matter, MatterAccess, Document, DocumentVersion, ProfiledEmail, MailSyncState
+  Domain/          Operator, Client, Matter, MatterAccess, Document, DocumentVersion, ProfiledEmail, MailSyncState, ActivityEvent
   Mail/            IMailSource, GraphMailSource (delta + category marker), EmailProfilingService
-  Mcp/             MatterTools — tool descriptors and handlers, operator-scoped
+  Mcp/             MatterTools (tool descriptors and handlers, operator-scoped), MatterPrompts (slash commands)
   Search/          SearchService — the UNION ALL search shared by REST and MCP
-src/MatterDesk.Web react screen: matter list, documents/email tabs, search, operator switcher, About page
+src/MatterDesk.Web react screen: matter list, documents/email tabs, search, operator switcher, live Activity panel, About page
 src/MatterDesk.Cli  local executable: REST walkthrough (`demo`), ad-hoc calls, and a stdio MCP bridge to the hosted endpoint
 tests/MatterDesk.Api.Tests  xUnit + WebApplicationFactory + SQLite in-memory + FakeMailSource
 tests/e2e                   Playwright (Chrome) with webServer bootstrapping both apps
