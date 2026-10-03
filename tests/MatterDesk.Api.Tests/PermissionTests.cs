@@ -15,9 +15,11 @@ public sealed class PermissionTests : IClassFixture<ApiFactory>
 
     private async Task<int> RestrictedMatterId()
     {
-        // JDU is the only operator granted on the restricted "Project Falcon" matter.
+        // JDU is the only operator granted on the restricted "Project Falcon" matter (10099-0001).
         var page = await _f.As("JDU").GetFromJsonAsync<PagedResult<MatterSummary>>("/api/matters");
-        return page!.Items.Single(m => m.IsRestricted).Id;
+        var falcon = page!.Items.Single(m => m.Number == "10099-0001");
+        Assert.True(falcon.IsRestricted);
+        return falcon.Id;
     }
 
     [Fact]
@@ -39,11 +41,14 @@ public sealed class PermissionTests : IClassFixture<ApiFactory>
     {
         var les = await _f.As("LES").GetFromJsonAsync<PagedResult<MatterSummary>>("/api/matters");
         var jdu = await _f.As("JDU").GetFromJsonAsync<PagedResult<MatterSummary>>("/api/matters");
+        var par = await _f.As("PAR").GetFromJsonAsync<PagedResult<MatterSummary>>("/api/matters");
 
         Assert.DoesNotContain(les!.Items, m => m.IsRestricted);
         Assert.Contains(jdu!.Items, m => m.IsRestricted);
-        Assert.Equal(2, les.Total);
-        Assert.Equal(3, jdu.Total);
+        Assert.DoesNotContain(par!.Items, m => m.Number == "10099-0001");   // granted to JDU alone; the other restricted matters are shared with PAR
+        Assert.Equal(11, les.Total);
+        Assert.Equal(18, jdu.Total);
+        Assert.Equal(17, par.Total);
     }
 
     [Fact]

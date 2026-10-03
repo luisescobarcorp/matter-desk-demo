@@ -24,6 +24,11 @@ button { font: inherit; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: var(--navy); }
 .badge { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; background: #f5dedc; color: #b23a48; padding: 2px 6px; border-radius: 10px; }
 .badge.kind { background: #e3eaf5; color: #3b6ea8; margin-right: 8px; }
+.row-badges { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+.row-title { overflow-wrap: anywhere; }
+.pill.status.open { background: #e6f4f4; color: var(--teal); }
+.pill.status.on-hold { background: #faf0d2; color: #8a6d0f; }
+.pill.status.closed { background: #eceff3; color: var(--grey); }
 .status { color: var(--grey); }
 .status.error { color: #b23a48; background: #fbeeee; border: 1px solid #f1c9cd; padding: 8px 10px; border-radius: 6px; }
 .hint { color: var(--grey); }

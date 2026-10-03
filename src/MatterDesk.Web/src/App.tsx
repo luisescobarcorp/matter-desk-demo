@@ -7,6 +7,10 @@ import { ActivityPanel, ToastProvider, useToast } from './Activity'
 
 const fmt = (iso: string) => new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
 
+const StatusPill = ({ status }: { status: Matter['status'] }) => (
+  <span className={`pill status ${status.toLowerCase().replace(' ', '-')}`} data-testid="matter-status">{status}</span>
+)
+
 type View = 'matters' | 'about'
 const viewFromHash = (): View => (window.location.hash === '#about' ? 'about' : 'matters')
 
@@ -107,10 +111,13 @@ function MatterList({ operator, selected, onSelect }: { operator: string; select
               <button className={`row ${selected === m.id ? 'active' : ''}`} onClick={() => onSelect(m.id)}>
                 <div className="row-top">
                   <span className="mono">{m.number}</span>
-                  {m.isRestricted && <span className="badge">restricted</span>}
+                  <span className="row-badges">
+                    {m.isRestricted && <span className="badge">restricted</span>}
+                    <StatusPill status={m.status} />
+                  </span>
                 </div>
                 <div className="row-title">{m.title}</div>
-                <div className="row-meta">{m.clientName} · {m.areaOfLaw} · {m.documentCount} docs · {m.emailCount} emails</div>
+                <div className="row-meta">{m.clientName} · {m.areaOfLaw} · {m.documentCount} docs · {m.emailCount} emails{m.responsibleCode && <> · <span className="mono">{m.responsibleCode}</span></>}</div>
               </button>
             </li>
           ))}
@@ -132,9 +139,18 @@ function MatterDetail({ operator, id }: { operator: string; id: number }) {
       {matter.status === 'ok' && (
         <div data-testid="matter-detail">
           <div className="detail-head">
-            <span className="mono">{matter.data.number}</span>
+            <div className="row-top">
+              <span className="mono">{matter.data.number}</span>
+              <span className="row-badges">
+                {matter.data.isRestricted && <span className="badge">restricted</span>}
+                <StatusPill status={matter.data.status} />
+              </span>
+            </div>
             <h2>{matter.data.title}</h2>
-            <div className="row-meta">{matter.data.clientName} · {matter.data.areaOfLaw} · opened {fmt(matter.data.openedUtc)} · {matter.data.canEdit ? 'can edit' : 'read only'}</div>
+            <div className="row-meta">
+              {matter.data.clientName} · {matter.data.areaOfLaw} · opened {fmt(matter.data.openedUtc)}
+              {matter.data.responsibleCode && <> · responsible <span className="mono">{matter.data.responsibleCode}</span></>} · {matter.data.canEdit ? 'can edit' : 'read only'}
+            </div>
           </div>
           <div className="tabs" role="tablist">
             <button role="tab" aria-selected={tab === 'documents'} onClick={() => setTab('documents')}>Documents</button>

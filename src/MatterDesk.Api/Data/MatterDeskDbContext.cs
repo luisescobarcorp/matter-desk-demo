@@ -49,6 +49,8 @@ public sealed class MatterDeskDbContext(DbContextOptions<MatterDeskDbContext> op
             e.Property(x => x.Number).HasMaxLength(24);
             e.Property(x => x.Title).HasMaxLength(300);
             e.Property(x => x.AreaOfLaw).HasMaxLength(60);
+            e.Property(x => x.Status).HasMaxLength(16);
+            e.Property(x => x.ResponsibleCode).HasMaxLength(8);
         });
 
         b.Entity<MatterAccess>(e =>

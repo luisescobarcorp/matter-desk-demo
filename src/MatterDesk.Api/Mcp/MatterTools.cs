@@ -86,7 +86,7 @@ public sealed class MatterTools(MatterDeskDbContext db, SearchService search, IC
             .Select(x => new
             {
                 x.Number, x.Title, x.AreaOfLaw, Client = new { x.Client.Number, x.Client.Name },
-                x.IsRestricted, x.OpenedUtc, CanEdit = canEdit, DocumentCount = x.Documents.Count, EmailCount = x.Emails.Count,
+                x.IsRestricted, x.Status, x.ResponsibleCode, x.OpenedUtc, CanEdit = canEdit, DocumentCount = x.Documents.Count, EmailCount = x.Emails.Count,
             })
             .SingleAsync(ct);
         return ToolResult.Ok(m);

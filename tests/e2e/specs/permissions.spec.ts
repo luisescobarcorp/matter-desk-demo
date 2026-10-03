@@ -3,16 +3,17 @@ import { expect, test } from '@playwright/test'
 const RESTRICTED_TITLE = 'Project Falcon'
 
 test.describe('matter visibility follows the operator', () => {
-  test('LES sees two matters and no restricted one; JDU sees three including the restricted one', async ({ page }) => {
+  test('LES sees eleven general matters and no restricted one; JDU sees eighteen including the restricted ones', async ({ page }) => {
     await page.goto('/')
     const list = page.getByTestId('matter-list')
-    await expect(list.locator('li')).toHaveCount(2)
+    await expect(list.locator('li')).toHaveCount(11)
     await expect(list).not.toContainText(RESTRICTED_TITLE)
+    await expect(list.getByText('restricted', { exact: true })).toHaveCount(0)
 
     await page.getByTestId('operator').selectOption('JDU')
-    await expect(list.locator('li')).toHaveCount(3)
+    await expect(list.locator('li')).toHaveCount(18)
     await expect(list).toContainText(RESTRICTED_TITLE)
-    await expect(list.getByText('restricted', { exact: true })).toBeVisible()
+    await expect(list.getByText('restricted', { exact: true })).toHaveCount(7)
   })
 
   test('opening a matter shows its documents and email with loading state first', async ({ page }) => {

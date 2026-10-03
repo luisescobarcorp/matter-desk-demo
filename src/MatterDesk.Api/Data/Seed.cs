@@ -3,13 +3,26 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MatterDesk.Api.Data;
 
-/// <summary>Deterministic demo data: two operators, one restricted matter that only one of them can see.</summary>
-public static class Seed
+/// <summary>
+/// Deterministic demo data in two layers:
+/// <list type="bullet">
+/// <item><see cref="ApplyCoreAsync"/> — the three operators and the three original matters the tests, the CLI demo
+/// capture and the recorded connector validation depend on (matter 10099-0001 "Project Falcon" with documents 5 and 6).
+/// It runs only on an empty database so those ids never move.</item>
+/// <item><c>Seed.Firm.cs</c> — the rest of a small Miami firm's book (clients, matters, documents, filed email, activity),
+/// added matter-by-matter so it is idempotent on a database that already has the core rows.</item>
+/// </list>
+/// </summary>
+public static partial class Seed
 {
     public static async Task ApplyAsync(MatterDeskDbContext db, CancellationToken ct = default)
     {
-        if (await db.Operators.AnyAsync(ct)) return;
+        if (!await db.Operators.AnyAsync(ct)) await ApplyCoreAsync(db, ct);
+        await ApplyFirmAsync(db, ct);
+    }
 
+    private static async Task ApplyCoreAsync(MatterDeskDbContext db, CancellationToken ct)
+    {
         var les = new Operator { Code = "LES", DisplayName = "Luis Escobar", Email = "les@firm.example" };
         var jdu = new Operator { Code = "JDU", DisplayName = "J. Duncan", Email = "jdu@firm.example" };
         var par = new Operator { Code = "PAR", DisplayName = "Paralegal One", Email = "par@firm.example" };
@@ -22,9 +35,9 @@ public static class Seed
 
         var t0 = new DateTime(2026, 1, 15, 14, 0, 0, DateTimeKind.Utc);
 
-        var m1 = new Matter { Client = acme, Number = "10042-0003", Title = "Acme v. Rodriguez — auto liability defense", AreaOfLaw = "Insurance Defense", OpenedUtc = t0 };
-        var m2 = new Matter { Client = brightline, Number = "10077-0001", Title = "Brightline — US 18/123,456 office action response", AreaOfLaw = "Intellectual Property", OpenedUtc = t0.AddDays(10) };
-        var m3 = new Matter { Client = confidential, Number = "10099-0001", Title = "Project Falcon — partner departure dispute", AreaOfLaw = "Employment", IsRestricted = true, OpenedUtc = t0.AddDays(20) };
+        var m1 = new Matter { Client = acme, Number = "10042-0003", Title = "Acme v. Rodriguez — auto liability defense", AreaOfLaw = "Insurance Defense", ResponsibleCode = "LES", OpenedUtc = t0 };
+        var m2 = new Matter { Client = brightline, Number = "10077-0001", Title = "Brightline — US 18/123,456 office action response", AreaOfLaw = "Intellectual Property", ResponsibleCode = "LES", OpenedUtc = t0.AddDays(10) };
+        var m3 = new Matter { Client = confidential, Number = "10099-0001", Title = "Project Falcon — partner departure dispute", AreaOfLaw = "Employment", IsRestricted = true, ResponsibleCode = "JDU", OpenedUtc = t0.AddDays(20) };
         db.Matters.AddRange(m1, m2, m3);
 
         // Restricted matter: only JDU is granted. LES and PAR must never see it, including through search.

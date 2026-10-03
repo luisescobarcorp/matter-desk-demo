@@ -1,7 +1,8 @@
 # Connecting an AI client to the MatterDesk demo
 
 Hosted demo: `https://szhzkeau4r.us-east-1.awsapprunner.com` — seeded data, no real client data.
-Operators: `LES` (two matters), `JDU` (three, including the restricted one), `PAR`.
+Operators: `LES` (eleven general matters), `JDU` (eighteen, including every restricted one), `PAR` (seventeen —
+every restricted matter except `10099-0001`). Try `search_matters` with "closing", "deposition" or "Falcon".
 
 The MCP server exposes three tools — `search_matters`, `get_matter`, `list_documents` — and runs them
 under the connected operator through the same `MatterAccessPolicy` the REST API uses. The client never

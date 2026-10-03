@@ -74,7 +74,8 @@ export default function About() {
       </p>
       <p className="about-try">
         Try it: switch the operator in the header. <b>LES</b> and <b>PAR</b> cannot see the restricted matter
-        <span className="mono"> 10099-0001</span>; <b>JDU</b> can. Search for <i>Falcon</i> as each one.
+        <span className="mono"> 10099-0001</span>; <b>JDU</b> can. Search for <i>Falcon</i> as each one. The data is a seeded
+        small-firm book (18 matters, 77 documents, no real client data): LES sees the 11 general matters, PAR 17, JDU all 18.
       </p>
 
       <h2>How I think about the Microsoft platform</h2>

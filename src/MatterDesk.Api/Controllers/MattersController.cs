@@ -30,7 +30,7 @@ public sealed class MattersController(MatterDeskDbContext db, ICurrentOperator m
         var total = await q.CountAsync(ct);
         var items = await q.OrderByDescending(m => m.OpenedUtc).ThenBy(m => m.Number)
             .Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(m => new MatterSummary(m.Id, m.Number, m.Title, m.AreaOfLaw, m.Client.Name, m.IsRestricted, m.OpenedUtc, m.Documents.Count, m.Emails.Count))
+            .Select(m => new MatterSummary(m.Id, m.Number, m.Title, m.AreaOfLaw, m.Client.Name, m.IsRestricted, m.OpenedUtc, m.Documents.Count, m.Emails.Count, m.Status, m.ResponsibleCode))
             .ToListAsync(ct);
 
         return Ok(new PagedResult<MatterSummary>(items, page, pageSize, total));
@@ -51,7 +51,7 @@ public sealed class MattersController(MatterDeskDbContext db, ICurrentOperator m
 
         var canEdit = await CanEditAsync(db.Matters, id, me.Id, ct) == Decision.Allowed;
         var m = await db.Matters.AsNoTracking().Where(x => x.Id == id)
-            .Select(x => new MatterDetail(x.Id, x.Number, x.Title, x.AreaOfLaw, x.Client.Number, x.Client.Name, x.IsRestricted, x.OpenedUtc, canEdit))
+            .Select(x => new MatterDetail(x.Id, x.Number, x.Title, x.AreaOfLaw, x.Client.Number, x.Client.Name, x.IsRestricted, x.OpenedUtc, canEdit, x.Status, x.ResponsibleCode))
             .SingleAsync(ct);
         return Ok(m);
     }

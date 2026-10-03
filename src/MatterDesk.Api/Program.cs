@@ -136,6 +136,7 @@ if (!app.Environment.IsEnvironment("Testing"))
     var db = scope.ServiceProvider.GetRequiredService<MatterDeskDbContext>();
     await db.Database.EnsureCreatedAsync();
     await MatterDesk.Api.Activities.ActivitySchema.EnsureAsync(db);   // EnsureCreated skips existing databases; this adds the newer table
+    await MatterSchema.EnsureAsync(db);                                 // ...and the newer Matters columns
     await Seed.ApplyAsync(db);
 }
 

@@ -69,8 +69,9 @@ npm install && npm run dev      # http://localhost:5173, proxies /api to :5080
 Try the permission boundary directly:
 
 ```bash
-curl -H "X-Operator-Code: LES" http://localhost:5080/api/matters                 # 2 matters
-curl -H "X-Operator-Code: JDU" http://localhost:5080/api/matters                 # 3 matters (one restricted)
+curl -H "X-Operator-Code: LES" http://localhost:5080/api/matters                 # 11 matters (the general ones)
+curl -H "X-Operator-Code: JDU" http://localhost:5080/api/matters                 # 18 matters (incl. 7 restricted)
+curl -H "X-Operator-Code: PAR" http://localhost:5080/api/matters                 # 17 matters (every restricted one but 10099-0001)
 curl -H "X-Operator-Code: LES" "http://localhost:5080/api/search?q=Falcon"       # total: 0
 curl -H "X-Operator-Code: JDU" "http://localhost:5080/api/search?q=Falcon"       # matter + 2 documents
 ```
@@ -168,7 +169,11 @@ protocol, Claude via Anthropic's MCP connector, and the stdio bridge — is in
 ## Hosted demo
 
 A hosted copy runs with the seeded demo data (no real client data) and the operator header enabled
-through `Auth:AllowDevHeader=true`. Switch the operator in the top-right to see the permission boundary
+through `Auth:AllowDevHeader=true`. The seed is a small Miami firm's book: 11 clients, 18 matters across
+commercial litigation, real estate, employment, estate planning, insurance defence, M&A, construction
+lien and immigration work (open, on hold and closed), 77 documents with versions, filed email, and a few
+days of Activity history (`Data/Seed.cs` for the three matters the tests pin, `Data/Seed.Firm.cs` for the
+rest, added idempotently by matter number). Switch the operator in the top-right to see the permission boundary
 move; open **About this project** for the background. Live at **https://szhzkeau4r.us-east-1.awsapprunner.com** (Swagger at `/swagger`, MCP at `/mcp`, or `/mcp/LES`, `/mcp/JDU`, `/mcp/PAR` for connectors that cannot send a header).
 
 How it is hosted: one container (the API serves the React build from `wwwroot`, with a SPA fallback
@@ -216,7 +221,7 @@ src/MatterDesk.Api
   Authorization/   MatterAccessPolicy — the predicate, once
   Activities/      IActivityRecorder — one row per governed action with its channel (web | cli | mcp)
   Controllers/     Matters, Documents, Search, Activity, MailSync, Mcp (JSON-RPC over Streamable HTTP: tools + prompts)
-  Data/            DbContext (indexes, concurrency token bump), Seed
+  Data/            DbContext (indexes, concurrency token bump), Seed (core matters) + Seed.Firm (the rest of the book, data-driven), schema patches
   Domain/          Operator, Client, Matter, MatterAccess, Document, DocumentVersion, ProfiledEmail, MailSyncState, ActivityEvent
   Mail/            IMailSource, GraphMailSource (delta + category marker), EmailProfilingService
   Mcp/             MatterTools (tool descriptors and handlers, operator-scoped), MatterPrompts (slash commands)

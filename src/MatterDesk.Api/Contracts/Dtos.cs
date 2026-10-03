@@ -7,9 +7,9 @@ public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSi
     public bool HasMore => Page * PageSize < Total;
 }
 
-public sealed record MatterSummary(int Id, string Number, string Title, string AreaOfLaw, string ClientName, bool IsRestricted, DateTime OpenedUtc, int DocumentCount, int EmailCount);
+public sealed record MatterSummary(int Id, string Number, string Title, string AreaOfLaw, string ClientName, bool IsRestricted, DateTime OpenedUtc, int DocumentCount, int EmailCount, string Status, string? ResponsibleCode);
 
-public sealed record MatterDetail(int Id, string Number, string Title, string AreaOfLaw, string ClientNumber, string ClientName, bool IsRestricted, DateTime OpenedUtc, bool CanEdit);
+public sealed record MatterDetail(int Id, string Number, string Title, string AreaOfLaw, string ClientNumber, string ClientName, bool IsRestricted, DateTime OpenedUtc, bool CanEdit, string Status, string? ResponsibleCode);
 
 public sealed record DocumentSummary(int Id, int MatterId, string MatterNumber, string Title, string DocumentType, string AuthorCode, string? Keywords, DateTime ModifiedUtc, int VersionCount, long Version);
 

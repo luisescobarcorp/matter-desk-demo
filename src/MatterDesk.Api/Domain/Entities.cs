@@ -28,10 +28,18 @@ public sealed class Matter
     public required string Title { get; set; }
     public required string AreaOfLaw { get; set; }
     public bool IsRestricted { get; set; }             // restricted matters require an explicit MatterAccess row
+    public string Status { get; set; } = MatterStatus.Open;
+    public string? ResponsibleCode { get; set; }       // operator code of the responsible attorney
     public DateTime OpenedUtc { get; set; }
     public ICollection<Document> Documents { get; set; } = new List<Document>();
     public ICollection<ProfiledEmail> Emails { get; set; } = new List<ProfiledEmail>();
     public ICollection<MatterAccess> Access { get; set; } = new List<MatterAccess>();
+}
+
+/// <summary>Lifecycle of a matter as the firm bills it. A string rather than an enum so new states need no migration.</summary>
+public static class MatterStatus
+{
+    public const string Open = "Open", OnHold = "On hold", Closed = "Closed";
 }
 
 /// <summary>Explicit grant. For restricted matters, no row means no access — including through search.</summary>
