@@ -25,7 +25,8 @@ export default defineConfig({
       name: 'chrome',
       use: {
         ...devices['Desktop Chrome'],
-        channel: 'chrome',
+        // Locally this is Google Chrome. CI installs Playwright's Chromium (`playwright install chromium`).
+        ...(process.env.CI ? {} : { channel: 'chrome' as const }),
         launchOptions: process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {},
       },
     },

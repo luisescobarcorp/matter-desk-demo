@@ -1,5 +1,7 @@
 # MatterDesk
 
+[![CI](https://github.com/luisescobarcorp/matter-desk-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/luisescobarcorp/matter-desk-demo/actions/workflows/ci.yml)
+
 A small, complete slice of a matter-centric document and email profiling API, built to the shape of a
 law-practice "all-in-one" system: the **matter is the hub**, documents and email are **profiled** onto it,
 and **permissions live in the query**.
@@ -211,6 +213,8 @@ dotnet test
 # End-to-end: boots the API and Vite, drives the React screen in Chrome — 9 tests
 cd tests/e2e && npm install && npx playwright test
 ```
+
+GitHub Actions runs the 28 API tests and the 9 Playwright tests on every push, with the HTML report attached to each run.
 
 What the suites prove:
 
