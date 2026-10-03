@@ -1,3 +1,4 @@
+using MatterDesk.Api.Activities;
 using MatterDesk.Api.Auth;
 using MatterDesk.Api.Authorization;
 using MatterDesk.Api.Contracts;
@@ -12,7 +13,7 @@ namespace MatterDesk.Api.Controllers;
 
 [ApiController]
 [Authorize]
-public sealed class DocumentsController(MatterDeskDbContext db, ICurrentOperator me) : ControllerBase
+public sealed class DocumentsController(MatterDeskDbContext db, ICurrentOperator me, IActivityRecorder activity) : ControllerBase
 {
     /// <summary>Document profile plus version history. Documents on forbidden matters return 404, not 403: a document id must not reveal that a restricted file exists.</summary>
     [HttpGet("api/documents/{id:int}")]
@@ -40,8 +41,8 @@ public sealed class DocumentsController(MatterDeskDbContext db, ICurrentOperator
     {
         switch (await CanEditAsync(db.Matters, matterId, me.Id, ct))
         {
-            case Decision.NotFound: return NotFound();
-            case Decision.Forbidden: return Forbid();
+            case Decision.NotFound: await Denied("document.create", $"matter #{matterId}", 404, ct); return NotFound();
+            case Decision.Forbidden: await Denied("document.create", $"matter #{matterId}", 403, ct); return Forbid();
         }
 
         var now = DateTime.UtcNow;
@@ -55,8 +56,10 @@ public sealed class DocumentsController(MatterDeskDbContext db, ICurrentOperator
         db.Documents.Add(doc);
         await db.SaveChangesAsync(ct);   // single SaveChanges = single transaction for profile + version
 
-        var created = await Get(doc.Id, ct);
-        return CreatedAtAction(nameof(Get), new { id = doc.Id }, (created.Result as OkObjectResult)?.Value);
+        var created = (await Get(doc.Id, ct)).Result as OkObjectResult;
+        var detail = created?.Value as DocumentDetail;
+        await activity.RecordAsync("document.create", detail?.MatterNumber, 201, $"document.create on {detail?.MatterNumber} → 201 Created (\"{doc.Title}\", doc {doc.Id})", ct: ct);
+        return CreatedAtAction(nameof(Get), new { id = doc.Id }, created?.Value);
     }
 
     /// <summary>
@@ -77,16 +80,19 @@ public sealed class DocumentsController(MatterDeskDbContext db, ICurrentOperator
             return Problem(statusCode: StatusCodes.Status428PreconditionRequired, title: "If-Match header with the document version is required.");
 
         var doc = await db.Documents.VisibleTo(me.Id).FirstOrDefaultAsync(d => d.Id == id, ct);
-        if (doc is null) return NotFound();
-        if (await CanEditAsync(db.Matters, doc.MatterId, me.Id, ct) != Decision.Allowed) return Forbid();
+        if (doc is null) { await Denied("document.update", $"doc {id}", 404, ct); return NotFound(); }
+        if (await CanEditAsync(db.Matters, doc.MatterId, me.Id, ct) != Decision.Allowed) { await Denied("document.update", $"doc {id}", 403, ct); return Forbid(); }
 
         if (doc.Version != expectedVersion)
+        {
+            await activity.RecordAsync("document.update", $"doc {id}", 409, $"document.update on doc {id} → 409 Conflict (saw v{expectedVersion}, current v{doc.Version})", ct: ct);
             return Conflict(new ProblemDetails
             {
                 Title = "The document profile was changed by someone else.",
                 Detail = $"You last saw version {expectedVersion}; the current version is {doc.Version}. Reload and reapply your change.",
                 Status = StatusCodes.Status409Conflict,
             });
+        }
 
         doc.Title = req.Title.Trim();
         doc.DocumentType = req.DocumentType.Trim();
@@ -99,9 +105,15 @@ public sealed class DocumentsController(MatterDeskDbContext db, ICurrentOperator
         }
         catch (DbUpdateConcurrencyException)
         {
+            db.Entry(doc).State = EntityState.Detached;   // so the activity insert below does not retry the failed update
+            await activity.RecordAsync("document.update", $"doc {id}", 409, $"document.update on doc {id} → 409 Conflict (concurrent write)", ct: ct);
             return Conflict(new ProblemDetails { Title = "The document profile was changed concurrently.", Status = StatusCodes.Status409Conflict });
         }
 
+        await activity.RecordAsync("document.update", $"doc {id}", 200, $"document.update on doc {id} → 200 OK (now v{doc.Version})", ct: ct);
         return await Get(id, ct);
     }
+
+    private Task Denied(string action, string target, int status, CancellationToken ct) =>
+        activity.RecordAsync(action, target, status, $"{action} on {target} → {status} {(status == 404 ? "Not Found" : "Forbidden")}", ct: ct);
 }

@@ -96,6 +96,23 @@ public sealed class ProfiledEmail
     public bool MarkerSet { get; set; }                       // Outlook category applied so users don't file twice
 }
 
+/// <summary>
+/// One row per governed action, whichever surface it came through (browser, local executable, AI client over MCP).
+/// Written by <c>IActivityRecorder</c>; read by the Activity panel. Append-only, never joined.
+/// </summary>
+public sealed class ActivityEvent
+{
+    public long Id { get; set; }
+    public DateTime OccurredUtc { get; set; }
+    public required string OperatorCode { get; set; }
+    public required string Channel { get; set; }       // web | cli | mcp
+    public required string Action { get; set; }        // search, document.create, search_matters, prompt.demo, ...
+    public string? Target { get; set; }                // matter number, document id or query text
+    public required string Outcome { get; set; }       // ok | denied | conflict | error
+    public int HttpStatus { get; set; }
+    public required string Summary { get; set; }       // one line, ready to show
+}
+
 /// <summary>Per-operator, per-folder Graph delta token so sync never re-reads the whole mailbox.</summary>
 public sealed class MailSyncState
 {

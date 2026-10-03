@@ -62,6 +62,7 @@ builder.Services.AddScoped<EmailProfilingService>();
 // ---------- Search and MCP ---------------------------------------------------------------------------
 builder.Services.AddScoped<MatterDesk.Api.Search.SearchService>();
 builder.Services.AddScoped<MatterDesk.Api.Mcp.MatterTools>();   // tools exposed to AI clients at POST /mcp, same operator, same predicate
+builder.Services.AddScoped<MatterDesk.Api.Activities.IActivityRecorder, MatterDesk.Api.Activities.ActivityRecorder>();   // one row per governed action, any channel
 
 // ---------- Web ------------------------------------------------------------------------------------
 builder.Services.AddControllers();
@@ -134,6 +135,7 @@ if (!app.Environment.IsEnvironment("Testing"))
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<MatterDeskDbContext>();
     await db.Database.EnsureCreatedAsync();
+    await MatterDesk.Api.Activities.ActivitySchema.EnsureAsync(db);   // EnsureCreated skips existing databases; this adds the newer table
     await Seed.ApplyAsync(db);
 }
 

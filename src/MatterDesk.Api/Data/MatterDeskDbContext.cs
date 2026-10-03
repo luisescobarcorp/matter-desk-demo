@@ -13,9 +13,21 @@ public sealed class MatterDeskDbContext(DbContextOptions<MatterDeskDbContext> op
     public DbSet<DocumentVersion> DocumentVersions => Set<DocumentVersion>();
     public DbSet<ProfiledEmail> ProfiledEmails => Set<ProfiledEmail>();
     public DbSet<MailSyncState> MailSyncStates => Set<MailSyncState>();
+    public DbSet<ActivityEvent> ActivityEvents => Set<ActivityEvent>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
+        b.Entity<ActivityEvent>(e =>
+        {
+            e.HasIndex(x => x.OccurredUtc);
+            e.Property(x => x.OperatorCode).HasMaxLength(8);
+            e.Property(x => x.Channel).HasMaxLength(8);
+            e.Property(x => x.Action).HasMaxLength(64);
+            e.Property(x => x.Target).HasMaxLength(300);
+            e.Property(x => x.Outcome).HasMaxLength(16);
+            e.Property(x => x.Summary).HasMaxLength(500);
+        });
+
         b.Entity<Operator>(e =>
         {
             e.HasIndex(x => x.Code).IsUnique();

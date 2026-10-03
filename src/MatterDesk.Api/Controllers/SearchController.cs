@@ -1,3 +1,4 @@
+using MatterDesk.Api.Activities;
 using MatterDesk.Api.Auth;
 using MatterDesk.Api.Contracts;
 using MatterDesk.Api.Search;
@@ -9,7 +10,7 @@ namespace MatterDesk.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/search")]
-public sealed class SearchController(SearchService search, ICurrentOperator me) : ControllerBase
+public sealed class SearchController(SearchService search, ICurrentOperator me, IActivityRecorder activity) : ControllerBase
 {
     /// <summary>
     /// Cross-matter search over matters, document profiles and profiled emails.
@@ -25,6 +26,8 @@ public sealed class SearchController(SearchService search, ICurrentOperator me) 
         if (q.Length < SearchService.MinQueryLength)
             return ValidationProblem(new ValidationProblemDetails(new Dictionary<string, string[]> { ["q"] = ["Enter at least two characters."] }));
 
-        return Ok(await search.SearchAsync(q, page, pageSize, me.Id, ct));
+        var result = await search.SearchAsync(q, page, pageSize, me.Id, ct);
+        await activity.RecordAsync("search", q, 200, $"search \"{q}\" → {result.Total} result{(result.Total == 1 ? "" : "s")}", ct: ct);
+        return Ok(result);
     }
 }

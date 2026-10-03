@@ -124,6 +124,7 @@ sealed class MatterDeskClient
         _http = new HttpClient { BaseAddress = new Uri(baseUrl + "/"), Timeout = TimeSpan.FromSeconds(30) };
         _http.DefaultRequestHeaders.Add("X-Operator-Code", op);
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("matterdesk-cli/0.1");
+        _http.DefaultRequestHeaders.Add("X-Client", "matterdesk-cli");   // lets the API's Activity panel label these calls as CLI
     }
 
     public MatterDeskClient As(string op) => new(BaseUrl, op);
