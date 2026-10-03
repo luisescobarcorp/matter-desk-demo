@@ -59,7 +59,7 @@ export default function App() {
         </main>
       ) : (
         <main className="layout">
-          <section className="pane">
+          <section className="pane matters">
             <h2>Matters</h2>
             <MatterList operator={operator} selected={selected} onSelect={(id) => { setQuery(''); setSelected(id) }} />
           </section>
