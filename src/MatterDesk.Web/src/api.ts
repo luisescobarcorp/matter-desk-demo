@@ -2,6 +2,7 @@ export type Paged<T> = { items: T[]; page: number; pageSize: number; total: numb
 export type Matter = { id: number; number: string; title: string; areaOfLaw: string; clientName: string; isRestricted: boolean; openedUtc: string; documentCount: number; emailCount: number }
 export type Document = { id: number; matterId: number; matterNumber: string; title: string; documentType: string; authorCode: string; keywords: string | null; modifiedUtc: string; versionCount: number; version: number }
 export type Email = { id: number; matterId: number; subject: string; fromAddress: string; receivedUtc: string; bodyPreview: string | null; profiledByCode: string; markerSet: boolean }
+export type ActivityEvent = { id: number; occurredUtc: string; operatorCode: string; channel: 'web' | 'cli' | 'mcp'; action: string; target: string | null; outcome: 'ok' | 'denied' | 'conflict' | 'error'; httpStatus: number; summary: string }
 export type SearchHit = { kind: 'matter' | 'document' | 'email'; id: number; matterId: number; matterNumber: string; title: string; snippet: string | null; whenUtc: string }
 
 export class ApiError extends Error {

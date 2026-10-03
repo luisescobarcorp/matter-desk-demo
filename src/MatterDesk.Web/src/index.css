@@ -47,3 +47,41 @@ button { font: inherit; }
 .about-try { background: #eef7f7; border: 1px solid #cfe6e6; padding: 10px 12px; border-radius: 6px; }
 .about-grid td { font-size: 13px; line-height: 1.45; }
 .about-key { font-weight: 600; color: var(--navy); white-space: nowrap; }
+.layout { grid-template-columns: 340px 1fr 330px; }
+.layout.single { grid-template-columns: 1fr 330px; }
+.layout.single .pane:not(.activity) { max-width: 1100px; margin: 0; }
+.activity { padding: 12px 14px; display: flex; flex-direction: column; max-height: calc(100vh - 90px); position: sticky; top: 16px; }
+.activity-head { display: flex; align-items: baseline; justify-content: space-between; }
+.activity-head h2 { margin: 0 0 4px; }
+.activity-hint { font-size: 12px; color: var(--grey); margin: 0 0 10px; line-height: 1.4; }
+.activity-hint code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+.activity-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
+.activity-row { border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; background: #fff; animation: activity-in .35s ease-out; }
+.activity-row[data-outcome="denied"], .activity-row[data-outcome="error"] { border-left: 3px solid #b23a48; }
+.activity-row[data-outcome="conflict"] { border-left: 3px solid var(--gold); }
+.activity-row[data-outcome="ok"] { border-left: 3px solid var(--teal); }
+.activity-top { display: flex; align-items: center; gap: 6px; }
+.activity-time { margin-left: auto; font-size: 11px; color: var(--grey); white-space: nowrap; }
+.activity-summary { font-size: 12.5px; margin-top: 3px; line-height: 1.35; word-break: break-word; }
+.pill { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+.pill.channel.web { background: #e3eaf5; color: #3b6ea8; }
+.pill.channel.cli { background: #efe6f7; color: #6b3fa0; }
+.pill.channel.mcp { background: #e2f3ee; color: #1a7f5a; }
+.pill.outcome.ok { background: #e6f4f4; color: var(--teal); }
+.pill.outcome.denied, .pill.outcome.error { background: #f5dedc; color: #b23a48; }
+.pill.outcome.conflict { background: #faf0d2; color: #8a6d0f; }
+@keyframes activity-in { from { transform: translateY(-6px); } to { transform: none; } }
+.toasts { position: fixed; top: 64px; right: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 50; max-width: 460px; }
+.toast { background: var(--navy); color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 13px; box-shadow: 0 6px 18px rgba(0,0,0,.18); display: flex; align-items: center; gap: 8px; animation: toast-in .25s ease-out; border-left: 4px solid var(--teal); }
+.toast.denied, .toast.error { border-left-color: #e06a78; }
+.toast.conflict { border-left-color: var(--gold); }
+.toast .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); flex: none; }
+.toast .dot.denied, .toast .dot.error { background: #e06a78; }
+.toast .dot.conflict { background: var(--gold); }
+@keyframes toast-in { from { transform: translateX(16px); } to { transform: none; } }
+.add-doc { display: flex; gap: 6px; margin: 0 0 10px; }
+.add-doc input { flex: 1; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; }
+.add-doc select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; }
+.add-doc button { background: var(--teal); color: #fff; border: none; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
+.add-doc button:disabled { opacity: .5; cursor: default; }
+@media (max-width: 1100px) { .layout, .layout.single { grid-template-columns: 1fr; } .activity { position: static; max-height: 360px; } }

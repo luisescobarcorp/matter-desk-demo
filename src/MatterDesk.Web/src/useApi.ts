@@ -4,7 +4,7 @@ import { ApiError, api } from './api'
 export type Async<T> = { status: 'loading' } | { status: 'error'; error: ApiError } | { status: 'ok'; data: T }
 
 /** Loading / error / data in one place, with cleanup so a slow response cannot update an unmounted screen. */
-export function useApi<T>(path: string | null, operator: string): Async<T> {
+export function useApi<T>(path: string | null, operator: string, version = 0): Async<T> {
   const [state, setState] = useState<Async<T>>({ status: 'loading' })
 
   useEffect(() => {
@@ -18,7 +18,7 @@ export function useApi<T>(path: string | null, operator: string): Async<T> {
         setState({ status: 'error', error: e instanceof ApiError ? e : new ApiError(0, 'Network error') })
       })
     return () => { cancelled = true }
-  }, [path, operator])
+  }, [path, operator, version])
 
   return state
 }

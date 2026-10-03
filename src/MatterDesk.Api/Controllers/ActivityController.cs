@@ -26,9 +26,8 @@ public sealed class ActivityController(MatterDeskDbContext db) : ControllerBase
         var q = db.ActivityEvents.AsNoTracking();
         if (after is > 0) q = q.Where(e => e.Id > after);
 
-        var items = await q.OrderByDescending(e => e.Id).Take(take)
-            .Select(e => new ActivityEventDto(e.Id, e.OccurredUtc, e.OperatorCode, e.Channel, e.Action, e.Target, e.Outcome, e.HttpStatus, e.Summary))
-            .ToListAsync(ct);
-        return Ok(items);
+        var rows = await q.OrderByDescending(e => e.Id).Take(take).ToListAsync(ct);
+        // SQLite hands DateTime back as Unspecified; mark it UTC so the JSON carries the trailing Z and browsers compute "2s ago" correctly.
+        return Ok(rows.Select(e => new ActivityEventDto(e.Id, DateTime.SpecifyKind(e.OccurredUtc, DateTimeKind.Utc), e.OperatorCode, e.Channel, e.Action, e.Target, e.Outcome, e.HttpStatus, e.Summary)).ToList());
     }
 }

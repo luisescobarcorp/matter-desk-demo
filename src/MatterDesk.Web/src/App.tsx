@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import type { Document, Email, Matter, Operator, Paged, SearchHit } from './api'
-import { operators } from './api'
+import { ApiError, api, operators } from './api'
 import { useApi } from './useApi'
 import About from './About'
+import { ActivityPanel, ToastProvider, useToast } from './Activity'
 
 const fmt = (iso: string) => new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
 
@@ -24,6 +25,7 @@ export default function App() {
   const go = (v: View) => { setView(v); window.location.hash = v === 'about' ? 'about' : '' }
 
   return (
+    <ToastProvider>
     <div className="shell">
       <header className="topbar">
         <div className="brand">
@@ -49,6 +51,7 @@ export default function App() {
       {view === 'about' ? (
         <main className="layout single">
           <section className="pane"><About /></section>
+          <ActivityPanel operator={operator} />
         </main>
       ) : (
         <main className="layout">
@@ -63,9 +66,11 @@ export default function App() {
                 ? <MatterDetail key={`${operator}-${selected}`} operator={operator} id={selected} />
                 : <p className="hint">Select a matter, or search across matters, documents and email. Switch operator to see how permissions change what is visible.</p>}
           </section>
+          <ActivityPanel operator={operator} />
         </main>
       )}
     </div>
+    </ToastProvider>
   )
 }
 
@@ -117,8 +122,9 @@ function MatterList({ operator, selected, onSelect }: { operator: string; select
 
 function MatterDetail({ operator, id }: { operator: string; id: number }) {
   const [tab, setTab] = useState<'documents' | 'emails'>('documents')
+  const [docsVersion, setDocsVersion] = useState(0)
   const matter = useApi<Matter & { clientNumber: string; canEdit: boolean }>(`/api/matters/${id}`, operator)
-  const docs = useApi<Paged<Document>>(`/api/matters/${id}/documents`, operator)
+  const docs = useApi<Paged<Document>>(`/api/matters/${id}/documents`, operator, docsVersion)
   const emails = useApi<Paged<Email>>(`/api/matters/${id}/emails`, operator)
 
   return (
@@ -137,6 +143,8 @@ function MatterDetail({ operator, id }: { operator: string; id: number }) {
           {tab === 'documents' ? (
             <Status state={docs}>
               {docs.status === 'ok' && (
+                <>
+                {matter.data.canEdit && <AddDocument operator={operator} matterId={id} matterNumber={matter.data.number} onCreated={() => setDocsVersion((v) => v + 1)} />}
                 <table className="grid" data-testid="documents">
                   <thead><tr><th>Title</th><th>Type</th><th>Author</th><th>Modified</th><th>Ver.</th></tr></thead>
                   <tbody>
@@ -145,6 +153,7 @@ function MatterDetail({ operator, id }: { operator: string; id: number }) {
                     ))}
                   </tbody>
                 </table>
+                </>
               )}
             </Status>
           ) : (
@@ -193,5 +202,44 @@ function SearchResults({ operator, query, onOpen }: { operator: string; query: s
         )}
       </Status>
     </div>
+  )
+}
+
+/** Profiles a new document onto the open matter; the result is confirmed as a toast and, two seconds later, as an Activity row from the server. */
+function AddDocument({ operator, matterId, matterNumber, onCreated }: { operator: string; matterId: number; matterNumber: string; onCreated: () => void }) {
+  const [title, setTitle] = useState('')
+  const [type, setType] = useState('Correspondence')
+  const [busy, setBusy] = useState(false)
+  const toast = useToast()
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim() || busy) return
+    setBusy(true)
+    try {
+      const d = await api<Document>(`/api/matters/${matterId}/documents`, operator, {
+        method: 'POST',
+        body: JSON.stringify({ title: title.trim(), documentType: type, storagePath: `web/${matterNumber}/${title.trim()}.docx` }),
+      })
+      toast('ok', `WEB · ${operator} · document.create on ${matterNumber} → 201 Created ("${d.title}")`)
+      setTitle('')
+      onCreated()
+    } catch (err) {
+      const status = err instanceof ApiError ? err.status : 0
+      const why = err instanceof ApiError ? err.title : 'Network error'
+      toast(status === 403 ? 'denied' : status === 409 ? 'conflict' : 'error', `WEB · ${operator} · document.create on ${matterNumber} → ${status || 'failed'} ${why}`)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form className="add-doc" onSubmit={submit} data-testid="add-document">
+      <input data-testid="add-document-title" placeholder="Profile a new document… (title)" value={title} onChange={(e) => setTitle(e.target.value)} />
+      <select value={type} onChange={(e) => setType(e.target.value)} aria-label="Document type">
+        {['Correspondence', 'Pleading', 'Agreement', 'Discovery', 'Note'].map((t) => <option key={t}>{t}</option>)}
+      </select>
+      <button type="submit" disabled={busy || !title.trim()}>Add</button>
+    </form>
   )
 }
