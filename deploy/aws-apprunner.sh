@@ -72,7 +72,8 @@ SOURCE_CONFIG="$(cat <<JSON
       "RuntimeEnvironmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Production",
         "Auth__AllowDevHeader": "true",
-        "ConnectionStrings__Sqlite": "Data Source=/tmp/matterdesk.db"
+        "ConnectionStrings__Sqlite": "Data Source=/tmp/matterdesk.db",
+        "MATTERDESK_RESET_SEED": "1"
       }
     }
   },

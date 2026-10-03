@@ -16,6 +16,20 @@ transfers to a Graph sync layer, MCP, and my database experience stated exactly 
 **[docs/BACKGROUND.md](docs/BACKGROUND.md)** and on the app's **About this project** page.
 It also covers BTCEdge, a personal real-time trading system (TypeScript, 442K lines, MCP server, ~6,900 tests) that is the strongest evidence for the concurrency, auth, testing and AI-assisted-development parts of the posting.
 
+## Start here
+
+Five minutes, in this order:
+
+1. **Open the live app** — [https://szhzkeau4r.us-east-1.awsapprunner.com](https://szhzkeau4r.us-east-1.awsapprunner.com). You are signed in as **LES — Luis Escobar (attorney)**. The list is a small firm's book (11 general matters). Switch **Signed in as** to **JDU — J. Duncan** and the list grows to 18, including restricted matter **10099-0001 Project Falcon** (red badge, two documents). **PAR** sees 17: every restricted matter except Falcon.
+2. **Search `Falcon`.** As LES the result is empty (total 0). As JDU it is the matter plus its two documents (total 3). Same query, same SQL, different operator.
+3. **Watch the Activity panel** on the right of every page. A search typed in the browser appears as a `web` row within two seconds. Leave the tab open for the next two steps.
+4. **Run the executable.** Release [v0.1.0](https://github.com/luisescobarcorp/matter-desk-demo/releases/tag/v0.1.0): [Windows](https://github.com/luisescobarcorp/matter-desk-demo/releases/download/v0.1.0/matterdesk-cli-win-x64.zip) (`matterdesk.exe`), [Linux](https://github.com/luisescobarcorp/matter-desk-demo/releases/download/v0.1.0/matterdesk-cli-linux-x64.zip), [macOS arm64](https://github.com/luisescobarcorp/matter-desk-demo/releases/download/v0.1.0/matterdesk-cli-osx-arm64.zip). Unzip and run `matterdesk demo` — a 20-step REST walkthrough (401, 403, the permission boundary, 428/409 on a profile edit, then MCP). The scratch document is deleted at the end. Each call shows up in the Activity panel as a `cli` row.
+5. **Connect an AI client.** [connectors/README.md](connectors/README.md) covers Claude Desktop, Claude.ai, ChatGPT, Cursor and VS Code (header, `/mcp/{operator}`, or the stdio bridge). Slash commands shipped by the server: `demo`, `find_matter`, `file_check`. A tool call shows up as an `mcp` row.
+
+Demo video (captioned, about two minutes): [matterdesk-demo.mp4](https://github.com/luisescobarcorp/matter-desk-demo/releases/download/v0.1.0/matterdesk-demo.mp4).
+
+Below: why the architecture is shaped this way, how to clone and run it, the test suites, and an index of the longer docs.
+
 ![Matter documents](docs/screenshot_matter_documents.png)
 
 ## Why these particular choices
@@ -56,6 +70,10 @@ The full line-by-line map, including what is marked *ramping* or *not yet*, is i
 Prerequisites: .NET 8 SDK, Node 20+, Google Chrome (for Playwright `channel: 'chrome'`).
 
 ```bash
+git clone https://github.com/luisescobarcorp/matter-desk-demo.git
+cd matter-desk-demo
+dotnet build            # whole solution: API, CLI, tests
+
 # API (SQLite by default; set ConnectionStrings__SqlServer to use SQL Server)
 cd src/MatterDesk.Api
 dotnet run --urls http://localhost:5080
@@ -125,9 +143,9 @@ and never assumes the server is the build it was compiled against.
 ```bash
 dotnet run --project src/MatterDesk.Cli -- demo                      # against the hosted demo, as LES
 dotnet run --project src/MatterDesk.Cli -- demo --api http://localhost:5080 --operator JDU
-
-matterdesk matters | search Falcon | documents 10099-0001 | tools | call search_matters query=Falcon
 ```
+
+Ad-hoc calls, each its own command: `matterdesk matters`, `matterdesk search Falcon`, `matterdesk documents 10099-0001`, `matterdesk tools`, `matterdesk call search_matters query=Falcon`.
 
 `demo` walks the whole surface and prints what each status code proves: 401 with no identity, 403 for an
 unknown operator, the restricted matter visible to JDU only, 403 vs 404 on restricted matter vs document,
@@ -158,7 +176,8 @@ curl -fsSL https://raw.githubusercontent.com/luisescobarcorp/matter-desk-demo/ma
 ```powershell
 irm https://raw.githubusercontent.com/luisescobarcorp/matter-desk-demo/main/connectors/install.ps1 | iex
 ```
- Ready-made
+
+Ready-made
 connector files for Claude Desktop, Claude.ai, ChatGPT, Cursor and VS Code, and the three ways to connect
 (header, header-less `/mcp/{operator}` URL, local stdio bridge), are in
 **[connectors/README.md](connectors/README.md)**. A captured run of `matterdesk demo` against the hosted
@@ -250,3 +269,17 @@ Spec first (the table above), then code, with an AI coding assistant drafting ag
 Every generated change was read and run; the two bugs it introduced (a `UNION` that EF could not translate after
 a record-constructor projection, and a `[Produces]` attribute that silently overrode `application/problem+json`)
 were caught by the tests, not by trust.
+
+## Docs
+
+| Doc | What it is |
+|---|---|
+| [docs/BACKGROUND.md](docs/BACKGROUND.md) | Platform model (Azure, Microsoft 365, Entra, Graph, EWS), ENNU integration work, MCP, database experience, the posting line by line, BTCEdge |
+| [docs/cli-demo-output.txt](docs/cli-demo-output.txt) | Captured `matterdesk demo` run (20 status lines) |
+| [docs/connector-validation.md](docs/connector-validation.md) | Recorded connector validation: raw MCP, Anthropic connector, stdio bridge |
+| [connectors/README.md](connectors/README.md) | How to attach Claude, ChatGPT, Cursor or VS Code, and the slash commands |
+| [docs/PUBLISH.md](docs/PUBLISH.md) | How this repository and the v0.1.0 release were published |
+
+## Licence
+
+MIT — see [LICENSE](LICENSE).

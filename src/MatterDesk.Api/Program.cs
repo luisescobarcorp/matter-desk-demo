@@ -1,7 +1,9 @@
+using System.IO.Compression;
 using MatterDesk.Api.Auth;
 using MatterDesk.Api.Data;
 using MatterDesk.Api.Mail;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
@@ -104,12 +106,29 @@ builder.Services.AddSwaggerGen(o =>
     var xml = Path.Combine(AppContext.BaseDirectory, "MatterDesk.Api.xml");
     if (File.Exists(xml)) o.IncludeXmlComments(xml);
 });
+builder.Services.AddResponseCompression(o =>
+{
+    o.EnableForHttps = true;
+    o.Providers.Add<BrotliCompressionProvider>();
+    o.Providers.Add<GzipCompressionProvider>();
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
     p.WithOrigins(cfg.GetSection("Cors:Origins").Get<string[]>() ?? ["http://localhost:5173"])
      .AllowAnyHeader().AllowAnyMethod().WithExposedHeaders("ETag")));
 
 var app = builder.Build();
 
+app.UseResponseCompression();
+app.Use(async (ctx, next) =>
+{
+    ctx.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    ctx.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    await next();
+});
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
+    app.UseHsts();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 if (allowDevHeaderAuth)
@@ -118,22 +137,36 @@ if (allowDevHeaderAuth)
     app.UseSwaggerUI();
 }
 app.UseDefaultFiles();
-app.UseStaticFiles();   // serves the built React app from wwwroot when present (single-container hosting)
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = c =>
+    {
+        if (c.Context.Request.Path.StartsWithSegments("/assets"))
+            c.Context.Response.Headers.CacheControl = "public,max-age=31536000,immutable";
+    },
+});   // serves the built React app from wwwroot when present (single-container hosting)
 app.UseCors();
 app.UseAuthentication();
 app.UseMiddleware<CurrentOperatorMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
-app.MapGet("/healthz", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNow })).AllowAnonymous();
+app.MapGet("/healthz", () => Results.Ok(new { status = "ok", utc = DateTime.UtcNow }))
+    .AllowAnonymous()
+    .WithTags("Health")
+    .WithSummary("Liveness check (anonymous)");
 if (Directory.Exists(Path.Combine(app.Environment.WebRootPath ?? "wwwroot")))
-    // Client-side routes resolve to the SPA; API, MCP and Swagger paths keep their normal 404s.
-    app.MapFallbackToFile("{*path:regex(^(?!api|mcp|swagger|assets).*$)}", "index.html").AllowAnonymous();
+    // Client-side routes (no file extension) resolve to the SPA. API, MCP, Swagger and missing files (favicon.ico, typos) stay 404s.
+    app.MapFallbackToFile("{*path:regex(^(?!api|mcp|swagger|assets)(?!.*\\.[a-z0-9]{{2,5}}$).*$)}", "index.html").AllowAnonymous();
 
 // Schema + seed. In production this would be `dotnet ef database update` in the release pipeline, not at startup.
 if (!app.Environment.IsEnvironment("Testing"))
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<MatterDeskDbContext>();
+    // A public demo accumulates scratch rows (the CLI walkthrough, visitors). Set MATTERDESK_RESET_SEED=1 to wipe and reseed on startup.
+    var resetSeed = Environment.GetEnvironmentVariable("MATTERDESK_RESET_SEED");
+    if (string.Equals(resetSeed, "1", StringComparison.OrdinalIgnoreCase) || string.Equals(resetSeed, "true", StringComparison.OrdinalIgnoreCase))
+        await db.Database.EnsureDeletedAsync();
     await db.Database.EnsureCreatedAsync();
     await MatterDesk.Api.Activities.ActivitySchema.EnsureAsync(db);   // EnsureCreated skips existing databases; this adds the newer table
     await MatterSchema.EnsureAsync(db);                                 // ...and the newer Matters columns

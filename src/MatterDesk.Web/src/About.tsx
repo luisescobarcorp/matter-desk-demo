@@ -35,9 +35,9 @@ const coverage = [
   ['Microsoft 365 / Graph / Exchange–Outlook', 'GraphMailSource: Entra auth, Inbox delta queries, Outlook category marker, idempotent filing', 'Demonstrated'],
   ['Authentication and authorization; OAuth / OIDC', 'JWT Bearer against any OIDC issuer; policy scheme; claim → operator mapping. In production: MSAL sign-in with Entra ID token validation, role gates, scoped service tokens', 'Demonstrated'],
   ['Azure DevOps / CI-CD / Git', 'azure-pipelines.yml; Git history; the same container runs on Azure App Service or Container Apps', 'Demonstrated'],
-  ['Automated testing incl. Playwright', '23 xUnit tests through the real pipeline; 6 Playwright tests in Chrome. React component tests not yet added; BTCEdge: thousands of Vitest tests, mutation passes, CI gate', 'Demonstrated (component tests: not yet)'],
+  ['Automated testing incl. Playwright', '28 xUnit tests through the real pipeline; 9 Playwright tests in Chrome. React component tests not yet added; BTCEdge: thousands of Vitest tests, mutation passes, CI gate', 'Demonstrated (component tests: not yet)'],
   ['AI-assisted development with human-owned review', 'Spec first, small diffs, every change read and run; two agent-introduced bugs caught by tests; MCP server at /mcp; BTCEdge built spec-first in Claude Code / Cursor (12 agent worktrees, written contracts at the top of 847 files)', 'Demonstrated'],
-  ['Existing production codebase, not only greenfield', 'A 113-plugin WordPress monorepo and a 27-repository estate maintained in production; backup-first deploys, hot-patch recovery, audit → single authorization primitive; a 442K-line TypeScript system operated in production with autodeploy and parity checks', 'Demonstrated (different stack)'],
+  ['Existing production codebase, not only greenfield', 'A 113-plugin WordPress monorepo and a 27-repository estate maintained in production; backup-first deploys, hot-patch recovery, audit → single authorization primitive; a 442K-line TypeScript system operated in production with autodeploy and parity checks', 'Background (different stack)'],
   ['5+ years, strong C# / ASP.NET Core', 'Working C# / ASP.NET Core 8 in this repository; 20 years across the rest of the stack; the project exists so the C# can be read rather than asserted', 'Demonstrated'],
 ]
 
@@ -87,6 +87,8 @@ export default function About() {
         through Graph; the API itself can be hosted anywhere.
       </p>
 
+      <details>
+        <summary>More background — the production estate, BTCEdge, and integration work</summary>
       <h2>The production estate behind these statements (ENNU, 2025–2026)</h2>
       <p>
         Twenty-seven repositories across two GitHub organizations run ENNU’s digital side. The six below are the live core and
@@ -122,6 +124,7 @@ export default function About() {
         Graph sync layer has.
       </p>
       <Grid head={['Pattern', 'What I did at ENNU', 'Graph-era equivalent']} rows={patterns} />
+      </details>
 
       <h2>Model Context Protocol (MCP)</h2>
       <p>
@@ -169,7 +172,7 @@ export default function About() {
         <li>AI-assisted delivery with human ownership: explicit spec, small diffs, every generated change read and run; correctness, security, performance, maintainability, architectural consistency, SQL integrity and regression risk gated by a person.</li>
         <li>Tests at every layer that matters to a DMS: API, SQL, component and end-to-end, permission cases first.</li>
       </ul>
-      <p className="hint">Source, tests and the full write-up are in the repository README and <span className="mono">docs/BACKGROUND.md</span>.</p>
+      <p className="hint">Source and tests: <a href="https://github.com/luisescobarcorp/matter-desk-demo">github.com/luisescobarcorp/matter-desk-demo</a> · API: <a href="/swagger">/swagger</a> · Background: <a href="https://github.com/luisescobarcorp/matter-desk-demo/blob/main/docs/BACKGROUND.md">docs/BACKGROUND.md</a></p>
     </article>
   )
 }

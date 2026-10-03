@@ -41,5 +41,9 @@ export async function api<T>(path: string, operator: string, init?: RequestInit)
   throw new ApiError(res.status, title, detail)
 }
 
-export const operators = ['LES', 'JDU', 'PAR'] as const
-export type Operator = (typeof operators)[number]
+export const operators = [
+  { code: 'LES', label: 'LES — Luis Escobar (attorney)' },
+  { code: 'JDU', label: 'JDU — J. Duncan (partner, sees restricted)' },
+  { code: 'PAR', label: 'PAR — Paralegal One (read-only)' },
+] as const
+export type Operator = (typeof operators)[number]['code']

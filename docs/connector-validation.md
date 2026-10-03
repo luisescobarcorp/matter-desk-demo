@@ -4,7 +4,6 @@
 - **Endpoint:** `https://szhzkeau4r.us-east-1.awsapprunner.com/mcp/{operatorCode}` (Streamable HTTP, JSON-RPC over POST, protocol `2025-06-18`)
 - **Operators tested:** `JDU` (granted the restricted matter), `LES` (not granted), `NOPE` (unknown → 403)
 - **Claude model:** `claude-sonnet-4-5` (resolved by the API to `claude-sonnet-4-5-20250929`)
-- **Working directory:** `/tmp/mcp-validate` (nothing under `/agent/matterdesk` was modified)
 
 | Section | Verdict |
 |---|---|
@@ -97,7 +96,7 @@ content-type: application/json
 }
 ```
 
-No API errors were encountered: the beta header, `mcp_servers` field and model id were all accepted on the first attempt, so no retry or docs lookup was needed.
+No API errors were encountered: the beta header, `mcp_servers` field and model id were all accepted on the first attempt.
 
 ### 2a. `/mcp/JDU` — HTTP 200, `stop_reason: end_turn`
 
@@ -160,7 +159,7 @@ Usage: 1,988 input / 207 output tokens.
 ### 2c. `/mcp/NOPE` — HTTP 400 (no message created, no tokens billed)
 
 ```json
-{"type":"error","error":{"type":"invalid_request_error","message":"mcp_servers[0] 'matterdesk': Error while communicating with MCP server."},"request_id":"req_011CfeHSxcVCYRZgJiZZvVee"}
+{"type":"error","error":{"type":"invalid_request_error","message":"mcp_servers[0] 'matterdesk': Error while communicating with MCP server."},"request_id":"<redacted>"}
 ```
 
 The server's 403 during the connector's `initialize` is surfaced by the Anthropic API as a request-level error rather than a tool error block — Claude is never invoked.
@@ -211,5 +210,3 @@ Input piped to stdin (newline-delimited JSON-RPC):
 All sections pass. The hosted MatterDesk MCP server works as a remote connector for the Anthropic Messages API
 (`mcp-client-2025-04-04` beta), enforces operator visibility end to end (JDU sees matter 10099-0001 and its two documents;
 LES sees nothing; NOPE is rejected at handshake), and the local stdio bridge is behaviourally identical to direct HTTP.
-
-Approximate Anthropic spend: 3 API calls, 5,915 input + 498 output tokens (the NOPE call failed before inference and was not billed).

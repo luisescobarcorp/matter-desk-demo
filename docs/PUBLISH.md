@@ -8,7 +8,7 @@ fork under another account.
 ## 1. Create the repository
 
 On github.com: **New repository** → **Public**, no README / .gitignore / licence (the repo already has
-them). Or with the CLI: `gh repo create <owner>/<name> --public --source=. --remote=origin --push`
+them — `LICENSE` is MIT). Or with the CLI: `gh repo create <owner>/<name> --public --source=. --remote=origin --push`
 (then skip to step 4).
 
 ## 2. Add the remote

@@ -114,6 +114,23 @@ public sealed class DocumentsController(MatterDeskDbContext db, ICurrentOperator
         return await Get(id, ct);
     }
 
+    /// <summary>Remove a document the operator can edit. Used by the CLI demo to delete its own scratch note. Hidden documents stay 404.</summary>
+    [HttpDelete("api/documents/{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(int id, CancellationToken ct)
+    {
+        var doc = await db.Documents.VisibleTo(me.Id).FirstOrDefaultAsync(d => d.Id == id, ct);
+        if (doc is null) { await Denied("document.delete", $"doc {id}", 404, ct); return NotFound(); }
+        if (await CanEditAsync(db.Matters, doc.MatterId, me.Id, ct) != Decision.Allowed) { await Denied("document.delete", $"doc {id}", 403, ct); return Forbid(); }
+
+        db.Documents.Remove(doc);
+        await db.SaveChangesAsync(ct);
+        await activity.RecordAsync("document.delete", $"doc {id}", 204, $"document.delete on doc {id} → 204 No Content", ct: ct);
+        return NoContent();
+    }
+
     private Task Denied(string action, string target, int status, CancellationToken ct) =>
         activity.RecordAsync(action, target, status, $"{action} on {target} → {status} {(status == 404 ? "Not Found" : "Forbidden")}", ct: ct);
 }

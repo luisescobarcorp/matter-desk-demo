@@ -134,6 +134,8 @@ sealed class MatterDeskClient
     public Task<HttpResponseMessage> PostJsonAsync(string path, object body) =>
         Send(() => new HttpRequestMessage(HttpMethod.Post, path.TrimStart('/')) { Content = JsonContent.Create(body) });
 
+    public Task<HttpResponseMessage> DeleteAsync(string path) => Send(() => new HttpRequestMessage(HttpMethod.Delete, path.TrimStart('/')));
+
     public Task<HttpResponseMessage> PutJsonAsync(string path, object body, string? ifMatch) =>
         Send(() =>
         {
@@ -214,7 +216,8 @@ static class Demo
             visible[who] = items;
             Step($"GET /api/matters as {who}", r, $"{items.Count} matters: {string.Join(", ", items.Select(m => m?["number"]?.GetValue<string>()))}");
         }
-        var restricted = visible["JDU"].FirstOrDefault(m => m?["isRestricted"]?.GetValue<bool>() == true);
+        var restricted = visible["JDU"].FirstOrDefault(m => m?["number"]?.GetValue<string>() == "10099-0001")
+            ?? visible["JDU"].FirstOrDefault(m => m?["isRestricted"]?.GetValue<bool>() == true);
         var restrictedId = restricted?["id"]?.GetValue<int>() ?? 0;
         var restrictedNo = restricted?["number"]?.GetValue<string>() ?? "?";
         Note($"The restricted matter {restrictedNo} appears for JDU only. The predicate runs in SQL (EXISTS against MatterAccess); the row never left the database for LES or PAR.");
@@ -260,6 +263,8 @@ static class Demo
                 Step($"PUT /api/documents/{docId}/profile If-Match: {etag} again", p2, "409 Conflict — a second writer with the old version cannot silently overwrite the first");
             using (var p3 = await c.As("PAR").PutJsonAsync($"/api/documents/{docId}/profile", body, "\"2\""))
                 Step($"PUT /api/documents/{docId}/profile as PAR", p3, "PAR can view Acme but has no edit grant → 403");
+            // Not a printed step: remove the scratch note so a public demo does not keep it. The status sequence above is unchanged.
+            using var cleanup = await c.As("LES").DeleteAsync($"/api/documents/{docId}");
         }
 
         // 9. MCP

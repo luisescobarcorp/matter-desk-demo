@@ -45,9 +45,9 @@ export default function App() {
         </nav>
         <SearchBox value={query} onChange={(v) => { setQuery(v); if (view !== 'matters') go('matters') }} />
         <label className="operator">
-          Operator
+          Signed in as
           <select data-testid="operator" value={operator} onChange={(e) => { setOperator(e.target.value as Operator); setSelected(null) }}>
-            {operators.map((o) => <option key={o} value={o}>{o}</option>)}
+            {operators.map((o) => <option key={o.code} value={o.code}>{o.label}</option>)}
           </select>
         </label>
       </header>
@@ -90,20 +90,30 @@ function SearchBox({ value, onChange }: { value: string; onChange: (v: string) =
   )
 }
 
-function Status({ state, children }: { state: { status: string; error?: { status: number; title: string; detail?: string } }; children: React.ReactNode }) {
+function Status({ state, onRetry, children }: { state: { status: string; error?: { status: number; title: string; detail?: string } }; onRetry?: () => void; children: React.ReactNode }) {
   if (state.status === 'loading') return <p className="status" data-testid="loading">Loading…</p>
   if (state.status === 'error') {
     const e = state.error!
-    const friendly = e.status === 403 ? 'You do not have access to this matter.' : e.status === 404 ? 'Not found.' : e.title
-    return <p className="status error" data-testid="error" role="alert">{friendly}{e.detail ? ` ${e.detail}` : ''}</p>
+    const friendly =
+      e.status === 403 ? 'You do not have access to this item.' :
+      e.status === 404 ? 'Not found.' :
+      e.status === 0 ? 'Could not reach the server. Check your connection and try again.' :
+      e.status >= 500 ? 'Something went wrong on our side. Please try again in a moment.' : e.title
+    const detail = e.status !== 403 && e.status !== 404 && e.status !== 0 && e.status < 500 ? e.detail : undefined
+    return (
+      <p className="status error" data-testid="error" role="alert">
+        {friendly}{detail ? ` ${detail}` : ''}
+        {onRetry && <button type="button" onClick={onRetry}>Try again</button>}
+      </p>
+    )
   }
   return <>{children}</>
 }
 
 function MatterList({ operator, selected, onSelect }: { operator: string; selected: number | null; onSelect: (id: number) => void }) {
-  const state = useApi<Paged<Matter>>('/api/matters?pageSize=50', operator)
+  const { state, reload } = useApi<Paged<Matter>>('/api/matters?pageSize=50', operator)
   return (
-    <Status state={state}>
+    <Status state={state} onRetry={reload}>
       {state.status === 'ok' && (
         <ul className="list" data-testid="matter-list">
           {state.data.items.map((m) => (
@@ -130,12 +140,15 @@ function MatterList({ operator, selected, onSelect }: { operator: string; select
 function MatterDetail({ operator, id }: { operator: string; id: number }) {
   const [tab, setTab] = useState<'documents' | 'emails'>('documents')
   const [docsVersion, setDocsVersion] = useState(0)
-  const matter = useApi<Matter & { clientNumber: string; canEdit: boolean }>(`/api/matters/${id}`, operator)
-  const docs = useApi<Paged<Document>>(`/api/matters/${id}/documents`, operator, docsVersion)
-  const emails = useApi<Paged<Email>>(`/api/matters/${id}/emails`, operator)
+  const matterQ = useApi<Matter & { clientNumber: string; canEdit: boolean }>(`/api/matters/${id}`, operator)
+  const docsQ = useApi<Paged<Document>>(`/api/matters/${id}/documents`, operator, docsVersion)
+  const emailsQ = useApi<Paged<Email>>(`/api/matters/${id}/emails`, operator)
+  const matter = matterQ.state
+  const docs = docsQ.state
+  const emails = emailsQ.state
 
   return (
-    <Status state={matter}>
+    <Status state={matter} onRetry={matterQ.reload}>
       {matter.status === 'ok' && (
         <div data-testid="matter-detail">
           <div className="detail-head">
@@ -157,7 +170,7 @@ function MatterDetail({ operator, id }: { operator: string; id: number }) {
             <button role="tab" aria-selected={tab === 'emails'} onClick={() => setTab('emails')}>Email</button>
           </div>
           {tab === 'documents' ? (
-            <Status state={docs}>
+            <Status state={docs} onRetry={docsQ.reload}>
               {docs.status === 'ok' && (
                 <>
                 {matter.data.canEdit && <AddDocument operator={operator} matterId={id} matterNumber={matter.data.number} onCreated={() => setDocsVersion((v) => v + 1)} />}
@@ -173,7 +186,7 @@ function MatterDetail({ operator, id }: { operator: string; id: number }) {
               )}
             </Status>
           ) : (
-            <Status state={emails}>
+            <Status state={emails} onRetry={emailsQ.reload}>
               {emails.status === 'ok' && (
                 <table className="grid" data-testid="emails">
                   <thead><tr><th>Subject</th><th>From</th><th>Received</th><th>Filed by</th><th>Marker</th></tr></thead>
@@ -194,11 +207,11 @@ function MatterDetail({ operator, id }: { operator: string; id: number }) {
 }
 
 function SearchResults({ operator, query, onOpen }: { operator: string; query: string; onOpen: (matterId: number) => void }) {
-  const state = useApi<Paged<SearchHit>>(`/api/search?q=${encodeURIComponent(query)}`, operator)
+  const { state, reload } = useApi<Paged<SearchHit>>(`/api/search?q=${encodeURIComponent(query)}`, operator)
   return (
     <div data-testid="search-results">
       <h2>Search: “{query}”</h2>
-      <Status state={state}>
+      <Status state={state} onRetry={reload}>
         {state.status === 'ok' && (
           state.data.total === 0
             ? <p className="hint" data-testid="no-results">No results.</p>
